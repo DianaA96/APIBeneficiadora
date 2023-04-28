@@ -1,17 +1,14 @@
 const express = require('express');
 const cors = require('cors');
-const Sequelize = require('sequelize');
-const bodyParser = require('body-parser');
+require('dotenv').config()
 const mysql = require ('mysql');
 const config = require('./helpers/config')
 //const cors = require('cors');
 require('dotenv').config();
 const app = express();
-const port = 3000; //Especifica el puerto
+const port = 3050; //Especifica el puerto
 //app.use(cors());
 
-app.use(cors());
-app.use(express.json());
 
 var indexRouter = require('./routes/index');
 var gerenteRouter = require('./routes/gerente');
@@ -21,6 +18,7 @@ var adminRouter = require('./Routes/Admin');
 var labRouter = require('./routes/lab');
 
 
+app.use(express.json());
 // Atrapa todos los errores
 app.use('/admin',adminRouter)
 app.use('/usuario',usuarioRouter)
