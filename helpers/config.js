@@ -1,10 +1,13 @@
+require('dotenv').config();
+
 var config = {
-    host: 'purisima.mysql.database.azure.com',
-    user: 'back',
-    password: 'TecTeam1',
-    database: 'dbpurisima',
-    port: 3306
+    host: process.env.DBhost,
+    user: process.env.DBuser,
+    password: process.env.DBpassword,
+    database: process.env.Namedatabase,
+    port: process.env.DBport
 }
+
 /*var config = {
     host: '127.0.0.1',
     user: 'root',
