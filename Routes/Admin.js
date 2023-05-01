@@ -8,5 +8,6 @@ router.get('/individual/:id',controller.READG)
 router.delete('/borrar/:id', controller.DELETE)
 router.patch('/editar/:id', controller.UPDATE)
 router.post('/create', controller.CREATE)
+router.post('/createReport',controller.GenerateReport)
 
 module.exports = router

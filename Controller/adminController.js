@@ -83,3 +83,46 @@ module.exports.READG = (request, response ) => {
         response.json(results[0])
     });
 }
+
+/* Este codigo genera los reportes y luego lo relaciona con las tablas 
+de cada concentrado y a su vez con cada uno de los elementos */
+module.exports.GenerateReport = (request, response ) => {
+
+    var bod = request.body
+    console.log(bod)
+    var sql1 = `INSERT INTO Analisis(TMS,idUsuario,idMina) values(${bod.tms},${bod.idUsuario},${bod.idMina});` //Aqui se crea el reporte
+    connection.query(sql1, (error, rows) =>{
+        if (error){
+            response.send(error)
+        }else{
+            let idAnalisis = rows.insertId //Guardas el id nuevo que es el id del reporte nuevo generado
+
+            //El primer for con la funcion Object Keys lee los concentrados por nombre y los convierte en id 
+            for (let i = 0; i < Object.keys(bod.Concentrados).length; i++) {
+                let concentrado = Object.keys(bod.Concentrados)[i] //Se guarda el concentrado que es
+                console.log(concentrado)
+
+                //El segundo for con la funcion Object Keys lee los elementos por nombre y los convierte en id
+                for (let j = 0; j < Object.keys(bod.Concentrados[concentrado]).length; j++) {
+                    let elemento = Object.keys(bod.Concentrados[concentrado])[j] //Guarda el elemento que es
+                    console.log(elemento)
+                    let porcentaje = bod.Concentrados[concentrado][elemento] //Guarda el porcentaje del elemento
+                    console.log(porcentaje)
+
+                    //El siguiente sql almacena los valores en la tabña por medio de id.
+                    var sqlIdC = `INSERT INTO Laboratorio(idAnalisis,idConcentrado,idElemento,gton) values(${idAnalisis},(SELECT idConcentrado FROM Concentrado where nombre = '${concentrado}'),(SELECT idElemento FROM Elemento where nombre = '${elemento}'),${porcentaje})`
+                    connection.query(sqlIdC, (error, rows) =>{
+                    if (error){
+                        response.send(error)
+                    }else{
+                        //Hasta el momento no retorna nada, la peticion no tiene respuesta aun pero ya guarda en DB
+                        console.log(rows)
+                        }
+                    })
+                    
+                }
+            }
+        }
+    })
+
+}
