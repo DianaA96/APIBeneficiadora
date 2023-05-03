@@ -15,13 +15,14 @@ var gerenteRouter = require('./routes/gerente');
 var operadorRouter = require('./routes/operador');
 var usuarioRouter = require('./Routes/Usuario')
 var adminRouter = require('./Routes/Admin');
-var labRouter = require('./routes/lab');
+var labRouter = require('./Routes/Lab');
 
 
 app.use(express.json());
 // Atrapa todos los errores
 app.use('/admin',adminRouter)
-app.use('/usuario',usuarioRouter)
+app.use('/usuario', usuarioRouter)
+app.use('/lab', labRouter)
 // Levantar el servidor
 app.listen(port, () => {
     console.log(`The server is runnig in port ${port}`)
