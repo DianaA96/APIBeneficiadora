@@ -10,6 +10,6 @@ router.patch('/editar/:id', controller.UPDATE)
 router.post('/create', controller.CREATE)
 router.post('/createReport',controller.GenerateReport)
 router.post('/elemento-precio', controller.EditPrecios)
-router.patch('/ListEdit', controller.ListForEdit)
+router.get('/getEdit/:id', controller.GetForEdit)
 
 module.exports = router

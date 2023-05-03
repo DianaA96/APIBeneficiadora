@@ -75,9 +75,9 @@ module.exports.List = (request, response) =>{
     })
 }
 
-module.exports.ListForEdit = (request, response) =>{
+module.exports.GetForEdit = (request, response) =>{
 
-    var sql = 'SELECT nombre,apellidoP,apellidoM,telfono,email,idRol FROM Usuario WHERE isDeleted = false and idRol != 1'
+    var sql = `SELECT idUsuario,nombre,apellidoP,apellidoM,telfono,email,idRol FROM Usuario WHERE isDeleted = false and idRol != 1 and idUsuario = ${request.params.id}`
     connection.query(sql, (error, rows) =>{
         if (error) 
             response.send(error)
