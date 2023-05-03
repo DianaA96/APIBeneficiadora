@@ -12,7 +12,7 @@ const port = 3050; //Especifica el puerto
 
 var indexRouter = require('./routes/index');
 var gerenteRouter = require('./routes/gerente');
-var operadorRouter = require('./routes/operador');
+var operadorRouter = require('./Routes/Operador');
 var usuarioRouter = require('./Routes/Usuario')
 var adminRouter = require('./Routes/Admin');
 var labRouter = require('./Routes/Lab');
