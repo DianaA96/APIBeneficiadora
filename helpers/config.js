@@ -7,4 +7,12 @@ var config = {
     database: process.env.Namedatabase,
     port: process.env.DBport
 }
+
+/*var config = {
+    host: '127.0.0.1',
+    user: 'root',
+    password: 'root',
+    database: 'dbpurisima',
+    port: 8889
+}*/
 module.exports = config;

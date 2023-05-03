@@ -9,5 +9,7 @@ router.delete('/borrar/:id', controller.DELETE)
 router.patch('/editar/:id', controller.UPDATE)
 router.post('/create', controller.CREATE)
 router.post('/createReport',controller.GenerateReport)
+router.post('/elemento-precio', controller.EditPrecios)
+router.patch('/ListEdit', controller.ListForEdit)
 
 module.exports = router

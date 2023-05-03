@@ -75,6 +75,16 @@ module.exports.List = (request, response) =>{
     })
 }
 
+module.exports.ListForEdit = (request, response) =>{
+
+    var sql = 'SELECT nombre,apellidoP,apellidoM,telfono,email,idRol FROM Usuario WHERE isDeleted = false and idRol != 1'
+    connection.query(sql, (error, rows) =>{
+        if (error) 
+            response.send(error)
+        response.json(rows)
+    })
+}
+
 module.exports.READG = (request, response ) => {
     var sql = 'SELECT idUsuario,nombre,apellidoP,apellidoM,ultimaConexion,telfono,email,idRol FROM Usuario WHERE idUsuario = ? AND isDeleted = false'
     connection.query(sql,[request.params.id], (error, results, fields) => {
@@ -100,29 +110,46 @@ module.exports.GenerateReport = (request, response ) => {
             //El primer for con la funcion Object Keys lee los concentrados por nombre y los convierte en id 
             for (let i = 0; i < Object.keys(bod.Concentrados).length; i++) {
                 let concentrado = Object.keys(bod.Concentrados)[i] //Se guarda el concentrado que es
-                console.log(concentrado)
+                
 
                 //El segundo for con la funcion Object Keys lee los elementos por nombre y los convierte en id
                 for (let j = 0; j < Object.keys(bod.Concentrados[concentrado]).length; j++) {
                     let elemento = Object.keys(bod.Concentrados[concentrado])[j] //Guarda el elemento que es
-                    console.log(elemento)
+                
                     let porcentaje = bod.Concentrados[concentrado][elemento] //Guarda el porcentaje del elemento
-                    console.log(porcentaje)
 
                     //El siguiente sql almacena los valores en la tabña por medio de id.
                     var sqlIdC = `INSERT INTO Laboratorio(idAnalisis,idConcentrado,idElemento,gton) values(${idAnalisis},(SELECT idConcentrado FROM Concentrado where nombre = '${concentrado}'),(SELECT idElemento FROM Elemento where nombre = '${elemento}'),${porcentaje})`
                     connection.query(sqlIdC, (error, rows) =>{
                     if (error){
                         response.send(error)
-                    }else{
-                        //Hasta el momento no retorna nada, la peticion no tiene respuesta aun pero ya guarda en DB
-                        console.log(rows)
-                        }
+                    }
                     })
                     
                 }
             }
+            
+            
         }
     })
+
+}
+
+module.exports.EditPrecios = (request, response) =>{
+    var bod = request.body
+    let now = new Date()
+    let fechaSQL = now.toISOString().slice(0, 10);
+
+
+    var sql = `INSERT INTO Precio_Elemento(idElemento,precio,fecha) values((SELECT idElemento FROM Elemento where nombre = '${bod.elemento}'),${bod.precio}, '${fechaSQL}')`
+
+    connection.query(sql, (error, rows) =>{
+        if (error){
+            response.send(error)
+        }else{
+            return response.status(200).json({
+                message: `Actualizado`})
+        }
+        })
 
 }
