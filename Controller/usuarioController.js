@@ -29,23 +29,26 @@ module.exports.LOGIN  =  async(request, response) =>{
                 const payload = {
                     user: {
                         idUsuario: results[0].idUsuario,
-                        nombre: results[0].idUsuario,
+                        nombre: results[0].nombre,
                         apellidoP: results[0].apellidoP,
                         apellidoM: results[0].apellidoM,
                         telfono: results[0].telfono,
                         email: results[0].email,
-                        idRole: results[0].idRole
+                        idRole: results[0].idRol
                     }
                 };
-        
+
+                console.log(payload.user)
                 jwt.sign(payload, 'dbpurisima', { expiresIn: '8h' }, (err, token) => {
                     if (err) {
                         console.error(`Error en la generación del token, ${err.message}`);
                         throw err;
                     }
-        
+
+                    const idUsuario = payload.user.idUsuario
+                    const idRol = payload.user.idRole
                     console.log(`Token generado correctamente`);
-                    return response.json({ token });
+                    return response.json({token,idUsuario,idRol});
                 });
             }else{
                 return response.status(404).json({
