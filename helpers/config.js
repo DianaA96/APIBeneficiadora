@@ -1,6 +1,5 @@
 require('dotenv').config();
 
-/*
 var config = {
     host: process.env.DBhost,
     user: process.env.DBuser,
@@ -9,7 +8,7 @@ var config = {
     port: process.env.DBport
 }
 
-*/
+/*
 var config = {
     host: '127.0.0.1',
     user: 'root',
@@ -17,4 +16,5 @@ var config = {
     database: 'dbpurisima',
     port: 3306
 }
+*/
 module.exports = config;
