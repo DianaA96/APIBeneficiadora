@@ -41,7 +41,7 @@ const insertarTrituradas = (datosTrituradas) => {
 // Controlador para procesar la petición POST de inserción de datos en ambas tablas
 module.exports.operadorReporteD = (req, res) => {
 
-    console.log(req.body.datos)
+    //console.log(req.body.datos)
     //JSON.parse(JSON.stringify(userData))
     const datos = JSON.parse(JSON.stringify(req.body.datos));
     
