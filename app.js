@@ -7,7 +7,7 @@ const config = require('./helpers/config')
 require('dotenv').config();
 const app = express();
 const port = 3050; //Especifica el puerto
-//app.use(cors());
+app.use(cors());
 
 
 var indexRouter = require('./routes/index');
