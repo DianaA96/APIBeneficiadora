@@ -106,7 +106,7 @@ module.exports.LabTable = async (req, res) => {
                 } else {
                     resolve(res.send(result));
                 }
-            });Q
+            });
         });
     } catch (e) {
         console.error(e);
