@@ -20,7 +20,7 @@ module.exports.LabReport = async (request, response) => {
         for (const turno of turnos) {
             q++;
             var sql1 = `INSERT INTO Analisis(idUsuario,idMina,idPlanta,fechaMuestreo,fechaEnsaye,turno) 
-        values(${bod.idUsuario},${bod.idMina},${bod.idPlanta},'${bod.fechaMuestreo}','${bod.fechaEnsaye}',${(q).toString()});`;
+                        values(${bod.idUsuario},${bod.idMina},${bod.idPlanta},'${bod.fechaMuestreo}','${bod.fechaEnsaye}',${(q).toString()});`;
 
             await new Promise((resolve, reject) => {//espera al insert de analisis para obtener el idAnalisis
                 connection.query(sql1, (error, rows) => {
@@ -28,8 +28,7 @@ module.exports.LabReport = async (request, response) => {
                         console.error('An error occurred:', error);
                         reject(error);
                     } else {
-                        idAnalisis = rows.insertId;
-                        resolve(idAnalisis);
+                        resolve(idAnalisis = rows.insertId);
                     }
                 });
             });
@@ -67,8 +66,8 @@ module.exports.LabReport = async (request, response) => {
     }
 };
 
-//Mestra el reporte de laboratorio segun la fecha enviada
-module.exports.LabTable = (req, res) => {
+//Muestra el reporte de laboratorio segun la fecha enviada
+module.exports.LabTable = async (req, res) => {
     try {
         const query = `SELECT 
                     Analisis.idAnalisis AS idAnalisis,
@@ -99,13 +98,15 @@ module.exports.LabTable = (req, res) => {
                 ORDER BY 
                     Analisis.idAnalisis
                 `;
-
-        connection.query(query, (err, result) => {
-            if (err) {
-                throw err;
-            } else {
-                res.send(result);
-            }
+        await new Promise((resolve, reject) => {
+            connection.query(query, (err, result) => {
+                if (err) {
+                    console.error('An error occurred:', err);
+                    reject(err);
+                } else {
+                    resolve(res.send(result));
+                }
+            });Q
         });
     } catch (e) {
         console.error(e);
