@@ -4,7 +4,7 @@ const config = require('../helpers/config')
 const connection = mysql.createConnection(config, { multipleStatements: true });
 
 connection.connect(error => {
-  if (error) throw error;
+  if (error) throw error;git 
   console.log('Conected operadorRD');
 });
 
