@@ -4,7 +4,7 @@ const config = require('../helpers/config')
 const connection = mysql.createConnection(config, { multipleStatements: true });
 
 connection.connect(error => {
-  if (error) throw error;git 
+  if (error) throw error;
   console.log('Conected operadorRD');
 });
 
@@ -41,7 +41,7 @@ const insertarTrituradas = (datosTrituradas) => {
 // Controlador para procesar la petición POST de inserción de datos en ambas tablas
 module.exports.operadorReporteD = (req, res) => {
 
-    //console.log(req.body.datos)
+    console.log(req.body.datos)
     //JSON.parse(JSON.stringify(userData))
     const datos = JSON.parse(JSON.stringify(req.body.datos));
     
@@ -63,3 +63,59 @@ module.exports.operadorReporteD = (req, res) => {
       });
   }
   
+
+
+// Controlador para procesar la petición GET de consultas múltiples
+module.exports.reporteD = (req, res) => {
+  const consultas = [
+    "SELECT SUM(acarreo) AS aLaFecha1_1 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN acarreo a ON s.idSubmina = a.idSubmina AND m.idMina = a.idMina WHERE a.idMina = 1 AND a.idSubmina = 1",
+    "SELECT SUM(acarreo) AS aLaFecha1_2 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN acarreo a ON s.idSubmina = a.idSubmina AND m.idMina = a.idMina WHERE a.idMina = 1 AND a.idSubmina = 2",
+    "SELECT SUM(acarreo) AS aLaFecha1_3 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN acarreo a ON s.idSubmina = a.idSubmina AND m.idMina = a.idMina WHERE a.idMina = 1 AND a.idSubmina = 3",
+    "SELECT SUM(acarreo) AS aLaFecha2_4 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN acarreo a ON s.idSubmina = a.idSubmina AND m.idMina = a.idMina WHERE a.idMina = 2 AND a.idSubmina = 4",
+    "SELECT SUM(acarreo) AS aLaFecha2_5 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN acarreo a ON s.idSubmina = a.idSubmina AND m.idMina = a.idMina WHERE a.idMina = 2 AND a.idSubmina = 5",
+    "SELECT SUM(acarreo) AS aLaFecha2_6 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN acarreo a ON s.idSubmina = a.idSubmina AND m.idMina = a.idMina WHERE a.idMina = 2 AND a.idSubmina = 6",
+    "SELECT SUM(acarreo) AS aLaFecha3_7 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN acarreo a ON s.idSubmina = a.idSubmina AND m.idMina = a.idMina WHERE a.idMina = 3 AND a.idSubmina = 7",
+    "SELECT SUM(trituradas) AS TaLaFecha111 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN trituradas t ON s.idSubmina = t.idSubmina AND m.idMina = t.idMina WHERE t.idMina = 1 AND t.idSubmina = 1 AND t.idPlanta = 1",
+    "SELECT SUM(trituradas) AS TaLaFecha112 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN trituradas t ON s.idSubmina = t.idSubmina AND m.idMina = t.idMina WHERE t.idMina = 1 AND t.idSubmina = 1 AND t.idPlanta = 2",
+    "SELECT SUM(trituradas) AS TaLaFecha121 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN trituradas t ON s.idSubmina = t.idSubmina AND m.idMina = t.idMina WHERE t.idMina = 1 AND t.idSubmina = 2 AND t.idPlanta = 1",
+    "SELECT SUM(trituradas) AS TaLaFecha122 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN trituradas t ON s.idSubmina = t.idSubmina AND m.idMina = t.idMina WHERE t.idMina = 1 AND t.idSubmina = 2 AND t.idPlanta = 2",
+    "SELECT SUM(trituradas) AS TaLaFecha131 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN trituradas t ON s.idSubmina = t.idSubmina AND m.idMina = t.idMina WHERE t.idMina = 1 AND t.idSubmina = 3 AND t.idPlanta = 1",
+    "SELECT SUM(trituradas) AS TaLaFecha132 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN trituradas t ON s.idSubmina = t.idSubmina AND m.idMina = t.idMina WHERE t.idMina = 1 AND t.idSubmina = 3 AND t.idPlanta = 2",
+    "SELECT SUM(trituradas) AS TaLaFecha241 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN trituradas t ON s.idSubmina = t.idSubmina AND m.idMina = t.idMina WHERE t.idMina = 2 AND t.idSubmina = 4 AND t.idPlanta = 1",
+    "SELECT SUM(trituradas) AS TaLaFecha242 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN trituradas t ON s.idSubmina = t.idSubmina AND m.idMina = t.idMina WHERE t.idMina = 2 AND t.idSubmina = 4 AND t.idPlanta = 2",
+    "SELECT SUM(trituradas) AS TaLaFecha251 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN trituradas t ON s.idSubmina = t.idSubmina AND m.idMina = t.idMina WHERE t.idMina = 2 AND t.idSubmina = 5 AND t.idPlanta = 1",
+    "SELECT SUM(trituradas) AS TaLaFecha252 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN trituradas t ON s.idSubmina = t.idSubmina AND m.idMina = t.idMina WHERE t.idMina = 2 AND t.idSubmina = 5 AND t.idPlanta = 2",
+    "SELECT SUM(trituradas) AS TaLaFecha261 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN trituradas t ON s.idSubmina = t.idSubmina AND m.idMina = t.idMina WHERE t.idMina = 2 AND t.idSubmina = 6 AND t.idPlanta = 1",
+    "SELECT SUM(trituradas) AS TaLaFecha262 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN trituradas t ON s.idSubmina = t.idSubmina AND m.idMina = t.idMina WHERE t.idMina = 2 AND t.idSubmina = 6 AND t.idPlanta = 2",
+    "SELECT SUM(trituradas) AS TaLaFecha371 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN trituradas t ON s.idSubmina = t.idSubmina AND m.idMina = t.idMina WHERE t.idMina = 3 AND t.idSubmina = 7 AND t.idPlanta = 1",
+    "SELECT SUM(trituradas) AS TaLaFecha372 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN trituradas t ON s.idSubmina = t.idSubmina AND m.idMina = t.idMina WHERE t.idMina = 3 AND t.idSubmina = 7 AND t.idPlanta = 2"
+  ];
+
+  const resultados = [];
+
+  // Ejecutar las consultas en paralelo utilizando Promises
+  const consultasPromises = consultas.map(consulta => {
+    return new Promise((resolve, reject) => {
+      connection.query(consulta, (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result[0]);
+        }
+      });
+    });
+  });
+
+  // Esperar a que todas las consultas se completen
+  Promise.all(consultasPromises)
+    .then(results => {
+      results.forEach(result => {
+        resultados.push(result);
+      });
+      res.json(resultados);
+    })
+    .catch(error => {
+      console.error("Error al ejecutar las consultas:", error);
+      res.status(500).json({ error: "Ocurrió un error al procesar las consultas" });
+    });
+};
