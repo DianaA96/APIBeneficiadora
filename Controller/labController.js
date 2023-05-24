@@ -1,6 +1,7 @@
 const { response, request } = require('express');
 const mysql = require('mysql');
-const config = require('../helpers/config')
+const config = require('../helpers/config');
+const e = require('express');
 const connection = mysql.createConnection(config, { multipleStatements: true });
 
 connection.connect(error => {
@@ -8,73 +9,67 @@ connection.connect(error => {
     console.log('Conected Lab');
 });
 
-/* Este codigo genera los reportes y luego lo relaciona con las tablas 
-de cada concentrado y a su vez con cada uno de los elementos */
-module.exports.LabReport = (request, response) => {
-    var sqlIdC = '';
-    var bod = request.body;
-    let turnos = new Object();
-    turnos.k1 = "primerT";
-    turnos.k2 = "segundoT";
-    turnos.k3 = "tercerT";
-
+//Genera el reporte de laboratorio
+module.exports.LabReport = async (request, response) => {
     try {
-        for (let q = 1; q <= 3; q++) {
+        var bod = request.body;
+        const turnos = ["primerT", "segundoT", "tercerT"];
+        var q = 0;
+        let idAnalisis;
+
+        for (const turno of turnos) {
+            q++;
             var sql1 = `INSERT INTO Analisis(idUsuario,idMina,idPlanta,fechaMuestreo,fechaEnsaye,turno) 
-            values(${bod.idUsuario},${bod.idMina},${bod.idPlanta},'${bod.fechaMuestreo}','${bod.fechaEnsaye}',${q.toString()});`; //Aqui se crea el reporte
-            var turno = bod[turnos["k" + q]]
+                        values(${bod.idUsuario},${bod.idMina},${bod.idPlanta},'${bod.fechaMuestreo}','${bod.fechaEnsaye}',${(q).toString()});`;
 
-            connection.query(sql1, (error, rows) => {
-                if (error) {
-                    if (error.code === "ERR_HTTP_HEADERS_SENT") {
-                        return response.status(200).json("sabrosito");
+            await new Promise((resolve, reject) => {//espera al insert de analisis para obtener el idAnalisis
+                connection.query(sql1, (error, rows) => {
+                    if (error) {
+                        console.error('An error occurred:', error);
+                        reject(error);
+                    } else {
+                        resolve(idAnalisis = rows.insertId);
                     }
-                    response.send(error);
-                } else {
-                    let idAnalisis = rows.insertId; //Guardas el id nuevo que es el id del reporte nuevo generado
-                    //El primer for con la funcion Object Keys lee los concentrados por nombre y los convierte en id
-                    for (let i = 0; i < Object.keys(turno).length; i++) {
-
-                        let concentrado = Object.keys(turno)[i] //Se guarda el concentrado que es
-                        console.log("Concentrado: ", concentrado)
-
-                        //El segundo for con la funcion Object Keys lee los elementos por nombre y los convierte en id
-                        for (let j = 0; j < Object.keys(turno[concentrado]).length; j++) {
-
-                            let elemento = Object.keys(turno[concentrado])[j] //Guarda el elemento que es
-                            let porcentaje = turno[concentrado][elemento] //Guarda el porcentaje del elemento
-
-                            console.log(elemento, ":", porcentaje)
-
-                            //El siguiente sql almacena los valores en la tabla por medio de id.
-                            var sqlIdC = `
-                            INSERT INTO Laboratorio(idAnalisis,idConcentrado,idElemento,gton) 
-                            VALUES(${idAnalisis},(SELECT idConcentrado FROM Concentrado where nombre = '${concentrado}'),
-                            (SELECT idElemento FROM Elemento where nombre = '${elemento}'),${porcentaje})`
-                            connection.query(sqlIdC, (error, rows) => {
-                                if (error) {
-                                    if (error.code === "ERR_HTTP_HEADERS_SENT") {
-                                        return response.status(200).json("sabrosito");
-                                    }
-                                    response.send(error);
-                                }
-
-                            })
-                        }
-                    }
-                }
+                });
             });
+
+            for (let i = 0; i < Object.keys(bod[turno]).length; i++) {//intera dependiendo de la cantidad de concentrados Cabeza,colas,etc
+
+                let concentrado = Object.keys(bod[turno])[i];//lee el concentrado
+
+                for (let j = 0; j < Object.keys(bod[turno][concentrado]).length; j++)//itera dependiendo de la cantidad de elementos
+                {
+                    let elemento = Object.keys(bod[turno][concentrado])[j];//lee el elemento
+                    let porcentaje = bod[turno][concentrado][elemento];//lee el porcentaje
+
+                    var sqlIdC = `INSERT INTO Laboratorio(idAnalisis,idConcentrado,idElemento,gton) 
+                                  VALUES(${idAnalisis},(SELECT idConcentrado FROM Concentrado where nombre = '${concentrado}'),
+                                  (SELECT idElemento FROM Elemento where nombre = '${elemento}'),${porcentaje})`;
+
+                    await new Promise((resolve, reject) =>//espera a que se realize el insert de laboratorio para cada porcentaje del elemento iterado
+                    {
+                        connection.query(sqlIdC, (error, rows) => {
+                            if (error) {
+                                console.error('An error occurred:', error);
+                                reject(error);
+                            } else {
+                                resolve();
+                            }
+                        });
+                    });
+                }
+            }
         }
+        response.send("Reporte generado");
     } catch (e) {
-        console.log(e)
+        console.log(e);
     }
-    setTimeout(() => {
-        response.status(200).json({ Message: 'Fin' });
-    }, 3000); // 10 seconds
 };
 
-module.exports.LabTable = (req, res) => {
-    const query = `SELECT 
+//Muestra el reporte de laboratorio segun la fecha enviada
+module.exports.LabTable = async (req, res) => {
+    try {
+        const query = `SELECT 
                     Analisis.idAnalisis AS idAnalisis,
                     Concentrado.nombre AS nombre_concentrado,
                     Elemento.nombre AS nombre_elemento,
@@ -103,11 +98,44 @@ module.exports.LabTable = (req, res) => {
                 ORDER BY 
                     Analisis.idAnalisis
                 `;
+        await new Promise((resolve, reject) => {
+            connection.query(query, (err, result) => {
+                if (err) {
+                    console.error('An error occurred:', err);
+                    reject(err);
+                } else {
+                    resolve(res.send(result));
+                }
+            });
+        });
+    } catch (e) {
+        console.error(e);
+    };
+};
 
-    connection.query(query, (err, result) => {
-        if (err) {
-            throw err;
-        }
-        res.send(result);
-    });
-}
+module.exports.LabList = async (req, res) => {
+    try {
+        const query = `SELECT idAnalisis AS ID, 
+                        nombre AS nombreMina,
+                        fechaEnsaye,
+                        fechaMuestreo
+                        FROM analisis 
+                        INNER JOIN Mina ON mina.idMina=analisis.idMina
+                        WHERE tms IS NULL
+                        group by fechaEnsaye`;
+
+        await new Promise((resolve, reject) => {
+            connection.query(query, (err, result) => {
+                if (err) {
+                    console.error('An error occurred:', err);
+                    reject(err);
+                } else {
+                    resolve(res.send(result));
+                }
+            });
+        });
+
+    } catch (e) {
+        console.error(e);
+    }
+};
