@@ -111,4 +111,31 @@ module.exports.LabTable = async (req, res) => {
     } catch (e) {
         console.error(e);
     };
-}
+};
+
+module.exports.LabList = async (req, res) => {
+    try {
+        const query = `SELECT idAnalisis AS ID, 
+                        nombre AS nombreMina,
+                        fechaEnsaye,
+                        fechaMuestreo
+                        FROM analisis 
+                        INNER JOIN Mina ON mina.idMina=analisis.idMina
+                        WHERE tms IS NULL
+                        group by fechaEnsaye`;
+
+        await new Promise((resolve, reject) => {
+            connection.query(query, (err, result) => {
+                if (err) {
+                    console.error('An error occurred:', err);
+                    reject(err);
+                } else {
+                    resolve(res.send(result));
+                }
+            });
+        });
+
+    } catch (e) {
+        console.error(e);
+    }
+};
