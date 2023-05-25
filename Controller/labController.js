@@ -114,17 +114,25 @@ module.exports.LabTable = async (req, res) => {
 };
 
 module.exports.LabList = async (req, res) => {
+    /*`SELECT idAnalisis AS ID,
+                        nombre AS nombreMina,
+                        fechaEnsaye,
+                        tms,
+                        fechaMuestreo
+                        FROM analisis 
+                        INNER JOIN Mina ON mina.idMina=analisis.idMina
+                        WHERE tms IS NULL
+                        group by fechaEnsaye`;*/
     try {
 
         const query = `SELECT analisis.idAnalisis AS ID,
-                        Mina.nombre AS nombreMina,
-                        analisis.fechaEnsaye,
-                        analisis.fechaMuestreo
-                        FROM analisis
-                        INNER JOIN Mina ON Mina.idMina = analisis.idMina
-                        WHERE analisis.tms IS NULL
-                        GROUP BY analisis.idAnalisis, Mina.nombre, analisis.fechaEnsaye, analisis.fechaMuestreo;
-`;
+        Mina.nombre AS nombreMina,
+        analisis.fechaEnsaye,
+        analisis.fechaMuestreo
+        FROM analisis
+        INNER JOIN Mina ON Mina.idMina = analisis.idMina
+        WHERE analisis.tms IS NULL
+        GROUP BY analisis.idAnalisis, Mina.nombre, analisis.fechaEnsaye, analisis.fechaMuestreo;`;
 
         await new Promise((resolve, reject) => {
             connection.query(query, (err, result) => {
