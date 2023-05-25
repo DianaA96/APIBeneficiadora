@@ -15,6 +15,6 @@ var config = {
     password: '',
     database: 'dbpurisima',
     port: 3306
-}
-*/
+}*/
+
 module.exports = config;

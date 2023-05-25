@@ -17,20 +17,19 @@ var usuarioRouter = require('./Routes/Usuario')
 var adminRouter = require('./Routes/Admin');
 var labRouter = require('./Routes/Lab');
 
-
-app.use(express.json());
-// Atrapa todos los errores
 app.use(express.json());
 app.use('/admin',adminRouter)
 app.use('/usuario', usuarioRouter)
 app.use('/lab', labRouter)
 app.use('/operador', operadorRouter)
+app.use('/gerente', gerenteRouter)
+
 // Levantar el servidor
 app.listen(port, () => {
     console.log(`The server is runnig in port ${port}`)
 })
 
-
+// Atrapa todos los errores
 const connection = mysql.createConnection(config);
 connection.connect(error => {
     if (error) throw error;
