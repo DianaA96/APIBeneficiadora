@@ -104,14 +104,15 @@ module.exports.LabTable = async (req, res) => {
                     console.error('An error occurred:', err);
                     reject(err);
                 } else {
-                    let reporte = {
+
+                    let reporte, turno = {};
+
+                    reporte = {
                         fecha: req.query.fecha,
                         planta: req.query.planta,
                         mina: req.query.mina,
-                    }
-                    
-                    let turno = {};
-                    
+                    };
+
                     result.forEach(element => {
                         if (element.nombre_concentrado) {
                             if (turno[element.turno]) {
@@ -128,15 +129,8 @@ module.exports.LabTable = async (req, res) => {
                             }
                         }
                     });
-                    
-                    let fobj = {
-                        reporte,
-                        turno
-                    }
-                   
-                    console.log(fobj);
-                    
-                    resolve(res.send(result));
+
+                    resolve(res.send({ reporte, turno }));
                 }
             });
         });
