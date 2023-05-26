@@ -98,6 +98,7 @@ module.exports.LabTable = async (req, res) => {
                 ORDER BY
                     Analisis.idAnalisis
                 `;
+        
         await new Promise((resolve, reject) => {
             connection.query(query, (err, result) => {
                 if (err) {
@@ -105,9 +106,9 @@ module.exports.LabTable = async (req, res) => {
                     reject(err);
                 } else {
 
-                    let reporte, turno = {};
+                    let head, report = {};
 
-                    reporte = {
+                    head = {
                         fecha: req.query.fecha,
                         planta: req.query.planta,
                         mina: req.query.mina,
@@ -115,22 +116,23 @@ module.exports.LabTable = async (req, res) => {
 
                     result.forEach(element => {
                         if (element.nombre_concentrado) {
-                            if (turno[element.turno]) {
-                                if (turno[element.turno][element.nombre_concentrado]) {
-                                    turno[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;
+                            if (report[element.turno]) {
+                                if (report[element.turno][element.nombre_concentrado]) {
+                                    report[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;
                                 } else {
-                                    turno[element.turno][element.nombre_concentrado] = {};
-                                    turno[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;
+                                    report[element.turno][element.nombre_concentrado] = {};
+                                    report[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;
                                 }
                             } else {
-                                turno[element.turno] = {};
-                                turno[element.turno][element.nombre_concentrado] = {};
-                                turno[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;
+                                report[element.turno] = {};
+                                report[element.turno][element.nombre_concentrado] = {};
+                                report[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;
                             }
                         }
+                    
                     });
 
-                    resolve(res.send({ reporte, turno }));
+                    resolve(res.send({ head, report }));
                 }
             });
         });
