@@ -59,12 +59,11 @@ module.exports.movMineral = (request, response) =>{
     });
 };
 
-/*
 module.exports.embarque = (request, res) => {
     const query =   `SELECT 
-                        MINA.nombre, 
-                        CONCENTRADO.nombre, 
-                        SUM(concentrado)
+                        MINA.nombre AS mina, 
+                        CONCENTRADO.nombre as concentrado, 
+                        SUM(embarque) AS total
                     FROM 
                         mina 
                         JOIN embarque USING(idMina)
@@ -72,7 +71,8 @@ module.exports.embarque = (request, res) => {
                     WHERE
                         EMBARQUE.fecha = '${request.query.fecha}'
                     GROUP BY 
-                        EMBARQUE.idConcentrado`;
+                        MINA.idMina,
+                        CONCENTRADO.idConcentrado`
 
     connection.query(query, (err, result) => {
         if (err) {
@@ -80,11 +80,12 @@ module.exports.embarque = (request, res) => {
         }
         res.send(result);
     });
-};*/
+};
 
 module.exports.grapHistoricas = (request, response) =>{
     // CONSULTA PARA ACARRADAS
     var acarreo =   `SELECT 
+                        idMina,
                         MONTH(fecha) AS mes, 
                         SUM(acarreo) AS totalAcarreo
                     FROM 
@@ -92,7 +93,8 @@ module.exports.grapHistoricas = (request, response) =>{
                     WHERE 
                         fecha IS NOT NULL
                     GROUP BY 
-                        MONTH(fecha)`;
+                        MONTH(fecha),
+                        idMina`;
 
     connection.query(acarreo, (error, rows1) => {
         if (error) {
@@ -102,6 +104,7 @@ module.exports.grapHistoricas = (request, response) =>{
 
         // CONSULTA PARA TRITURADAS
         var trituradas =   `SELECT 
+                                idMina,
                                 MONTH(fecha) AS mes, 
                                 SUM(trituradas) AS totalTrituradas
                             FROM 
@@ -109,7 +112,8 @@ module.exports.grapHistoricas = (request, response) =>{
                             WHERE 
                                 fecha IS NOT NULL
                             GROUP BY 
-                                MONTH(fecha)`;
+                                MONTH(fecha),
+                                idMina`;
 
         connection.query(trituradas, (error, rows2) => {
             if (error) {
@@ -120,7 +124,7 @@ module.exports.grapHistoricas = (request, response) =>{
             // CONSULTA PARA CONCENTRADOS
             var concentrados =  `SELECT 
                                     MONTH(fecha) AS mes, 
-                                    SUM(concentrado) AS totalConcentrados,
+                                    SUM(embarque) AS totalConcentrados,
                                     CONCENTRADO.nombre
                                 FROM 
                                     embarque
