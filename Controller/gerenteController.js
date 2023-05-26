@@ -11,13 +11,14 @@ connection.connect(error => {
 module.exports.movMineral = (request, response) => {
     // CONSULTA PARA ACARRADAS
     var acarreo = `SELECT 
-                      nombre,
-                      SUM(acarreo) AS 'Acarreo total'
+                    nombre,
+                    SUM(acarreo) AS 'Acarreo total'
                   FROM mina 
-                      JOIN acarreo USING(idMina)
-                      JOIN movimiento_mineral USING(idMovimiento)
-                  WHERE MOVIMIENTO_MINERAL.fecha = '${request.query.fecha}'
-                  GROUP BY (nombre)`;
+                    JOIN acarreo USING(idMina)
+                    JOIN movimiento_mineral USING(idMovimiento)
+                  WHERE 
+                    MOVIMIENTO_MINERAL.fecha = '${request.query.fecha}'
+                  GROUP BY (idMina)`;
   
     connection.query(acarreo, (error, rows1) => {
       if (error) {
@@ -33,7 +34,7 @@ module.exports.movMineral = (request, response) => {
                           JOIN trituradas USING(idMina)
                           JOIN movimiento_mineral USING(idMovimiento)
                       WHERE MOVIMIENTO_MINERAL.fecha = '${request.query.fecha}'
-                      GROUP BY (nombre)`;
+                      GROUP BY (idMina)`;
   
       connection.query(trituradas, (error, rows2) => {
         if (error) {
@@ -161,6 +162,7 @@ module.exports.grapHistoricas = (request, response) =>{
     });
 };
 
+/*
 module.exports.historialBascula = (request, response) =>{
     // CONSULTA PARA ACARRADAS
     var acarreo =   `SELECT 
@@ -210,4 +212,63 @@ module.exports.historialBascula = (request, response) =>{
             response.json(combinedRows);
         });
     });
-};
+}; */
+
+module.exports.balance = (request, res) => {
+    const concentradoQuery = `SELECT 
+                                idElemento, 
+                                idConcentrado, 
+                                ELEMENTO.nombre AS elemento,
+                                CONCENTRADO.nombre AS concentrado,
+                                SUM(gton) AS cantidad, 
+                                tms
+                              FROM 
+                                analisis
+                                JOIN laboratorio USING(idAnalisis)
+                                JOIN elemento USING(idElemento)
+                                JOIN concentrado USING(idConcentrado)
+                              WHERE 
+                                idAnalisis = 1 
+                                AND idConcentrado = 5
+                              GROUP BY 
+                                idElemento, 
+                                idConcentrado`;
+  
+    connection.query(concentradoQuery, (error, rows1) => {
+      if (error) {
+        res.send(error);
+        return;
+      }
+  
+      // OBJETO POR CONCENTRADO
+      const combinedRows = {};
+  
+      for (let i = 0; i < rows1.length; i++) {
+        const concentrado = rows1[i].concentrado;
+        const elemento = rows1[i].elemento;
+        const cantidad = rows1[i].cantidad;
+        const tms = rows1[i].tms;
+        const contenido = (tms * cantidad) / 100;
+        const recuperacion = contenido * 100;
+  
+        if (!combinedRows.hasOwnProperty(concentrado)) {
+          combinedRows[concentrado] = {
+            tms: tms,
+            elementos: [],
+          };
+        }
+  
+        combinedRows[concentrado].elementos.push({
+          elemento: elemento,
+          analisis: cantidad,
+          contenido: contenido,
+          recuperacion: recuperacion
+        });
+      }
+  
+      // ENVÍO DE RESPUESTA HTTP
+      res.json(combinedRows);
+    });
+  };
+  
+  
