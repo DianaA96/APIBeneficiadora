@@ -76,7 +76,7 @@ module.exports.LabTable = async (req, res) => {
                     Laboratorio.gton AS gton,    
                     Mina.nombre AS nombre_mina,
                     Planta.nombre AS nombre_planta,
-                    Analisis.turno AS turno
+                    Analisis.turno AS turno            
                 FROM 
                     Laboratorio 
                     INNER JOIN Analisis ON Laboratorio.idAnalisis = Analisis.idAnalisis 
@@ -87,15 +87,15 @@ module.exports.LabTable = async (req, res) => {
                 WHERE 
                     Mina.nombre LIKE '${req.query.mina}' AND
                     Planta.nombre LIKE '${req.query.planta}' AND
-                    Analisis.fechaEnsaye LIKE '${req.query.fecha}'
-
+                    Analisis.fechaEnsaye LIKE '${req.query.fecha}' AND
+                    TMS IS NULL
                 GROUP BY 
                     Laboratorio.idConcentrado, 
                     Laboratorio.idElemento, 
                     Laboratorio.gton, 
                     Analisis.idAnalisis, 
                     Analisis.turno
-                ORDER BY 
+                ORDER BY
                     Analisis.idAnalisis
                 `;
         await new Promise((resolve, reject) => {
@@ -104,6 +104,38 @@ module.exports.LabTable = async (req, res) => {
                     console.error('An error occurred:', err);
                     reject(err);
                 } else {
+                    let reporte = {
+                        fecha: req.query.fecha,
+                        planta: req.query.planta,
+                        mina: req.query.mina,
+                    }
+                    
+                    let turno = {};
+                    
+                    result.forEach(element => {
+                        if (element.nombre_concentrado) {
+                            if (turno[element.turno]) {
+                                if (turno[element.turno][element.nombre_concentrado]) {
+                                    turno[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;
+                                } else {
+                                    turno[element.turno][element.nombre_concentrado] = {};
+                                    turno[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;
+                                }
+                            } else {
+                                turno[element.turno] = {};
+                                turno[element.turno][element.nombre_concentrado] = {};
+                                turno[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;
+                            }
+                        }
+                    });
+                    
+                    let fobj = {
+                        reporte,
+                        turno
+                    }
+                   
+                    console.log(fobj);
+                    
                     resolve(res.send(result));
                 }
             });
