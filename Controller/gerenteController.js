@@ -66,6 +66,7 @@ module.exports.movMineral = (request, response) => {
     });
   };  
 
+  /*
 module.exports.embarque = (request, res) => {
     const query =   `SELECT 
                         MINA.nombre AS mina, 
@@ -87,7 +88,57 @@ module.exports.embarque = (request, res) => {
         }
         res.send(result);
     });
+};*/
+
+module.exports.embarque = (request, res) => {
+    const query = `SELECT 
+                        MINA.nombre AS mina, 
+                        CONCENTRADO.nombre as concentrado, 
+                        SUM(embarque) AS total
+                    FROM 
+                        mina 
+                        JOIN embarque USING(idMina)
+                        JOIN concentrado USING(idConcentrado)
+                    WHERE
+                        EMBARQUE.fecha = '${request.query.fecha}'
+                    GROUP BY 
+                        MINA.idMina,
+                        CONCENTRADO.idConcentrado`
+
+    connection.query(query, (err, rows) => {
+        if (err) {
+            throw err;
+        }
+        
+        // OBJETO DE RESULTADO
+        const result = {};
+
+        rows.forEach(row => {
+            const mina = row.mina;
+            const concentrado = row.concentrado;
+            const total = row.total;
+            
+            // VERIFICA SI LA MINA EXISTE EN EL OBJETO
+            if (!result.hasOwnProperty(mina)) {
+                // CREA ARREGLO VACÍO
+                result[mina] = [];
+            }
+            
+            // CREA OBJETO
+            const concentradoObj = {
+                nombre: concentrado,
+                total: total
+            };
+            
+            // AGREGA OBJETO AL ARREGLO
+            result[mina].push(concentradoObj);
+        });
+
+        // RESPUESTA
+        res.send(result);
+    });
 };
+
 
 module.exports.grapHistoricas = (request, response) =>{
     // CONSULTA PARA ACARRADAS
