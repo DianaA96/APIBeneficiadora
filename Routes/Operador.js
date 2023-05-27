@@ -5,5 +5,6 @@ var controller = require('../Controller/operadorController')
 
 router.post('/operadorReporteD', controller.operadorReporteD)
 router.get('/reporteD', controller.reporteD)//g
+router.get('/existenciaInicial', controller.existenciaInicial)
 
 module.exports = router

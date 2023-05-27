@@ -119,3 +119,26 @@ module.exports.reporteD = (req, res) => {
       res.status(500).json({ error: "Ocurrió un error al procesar las consultas" });
     });
 };
+
+
+
+// Endpoint GET para la consulta de inicial
+module.exports.existenciaInicial =  (req, res) => {
+  const consulta = `
+    SELECT s.idMina, s.idSubmina, SUM(acarreo) - SUM(t.trituradas) AS inicial
+    FROM acarreo a
+    JOIN submina USING (idMina)
+    JOIN submina s ON a.idSubmina = s.idSubmina
+    JOIN trituradas t ON s.idSubmina = t.idSubmina
+    JOIN trituradas tr ON s.idMina = tr.idMina
+    GROUP BY s.idMina, s.idSubmina`;
+
+  connection.query(consulta, (error, results) => {
+    if (error) {
+      console.error('Error al ejecutar la consulta:', error);
+      res.status(500).json({ error: 'Ocurrió un error al procesar la consulta' });
+    } else {
+      res.json(results);
+    }
+  });
+};
