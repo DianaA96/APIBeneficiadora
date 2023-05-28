@@ -67,31 +67,7 @@ module.exports.movMineral = (request, response) => {
     });
   };  
 
-  /*
-module.exports.embarque = (request, res) => {
-    const query =   `SELECT 
-                        MINA.nombre AS mina, 
-                        CONCENTRADO.nombre as concentrado, 
-                        SUM(embarque) AS total
-                    FROM 
-                        mina 
-                        JOIN embarque USING(idMina)
-                        JOIN concentrado USING(idConcentrado)
-                    WHERE
-                        EMBARQUE.fecha = '${request.query.fecha}'
-                    GROUP BY 
-                        MINA.idMina,
-                        CONCENTRADO.idConcentrado`
-
-    connection.query(query, (err, result) => {
-        if (err) {
-            throw err;
-        }
-        res.send(result);
-    });
-};*/
-
-module.exports.embarque = (request, res) => {
+  module.exports.embarque = (request, res) => {
     const query = `SELECT 
                         MINA.nombre AS mina, 
                         CONCENTRADO.nombre as concentrado, 
@@ -121,18 +97,18 @@ module.exports.embarque = (request, res) => {
             
             // VERIFICA SI LA MINA EXISTE EN EL OBJETO
             if (!result.hasOwnProperty(mina)) {
-                // CREA ARREGLO VACÍO
-                result[mina] = [];
+                // CREA UN NUEVO OBJETO PARA LA MINA
+                result[mina] = {};
             }
-            
-            // CREA OBJETO
-            const concentradoObj = {
-                nombre: concentrado,
-                total: total
-            };
-            
-            // AGREGA OBJETO AL ARREGLO
-            result[mina].push(concentradoObj);
+
+            // VERIFICA SI EL CONCENTRADO EXISTE EN EL OBJETO DE LA MINA
+            if (!result[mina].hasOwnProperty(concentrado)) {
+                // AGREGA UNA NUEVA PROPIEDAD PARA EL CONCENTRADO
+                result[mina][concentrado] = 0;
+            }
+
+            // SUMA EL TOTAL AL VALOR EXISTENTE
+            result[mina][concentrado] += total;
         });
 
         // RESPUESTA
