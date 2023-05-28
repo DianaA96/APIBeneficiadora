@@ -43,7 +43,7 @@ module.exports.movMineral = (request, response) => {
         }
   
         // OBJETO POR MINA
-        var combinedRows = {};
+        var combinedRows = [];
   
         for (let i = 0; i < rows1.length; i++) {
           var mina = rows1[i].nombre;
@@ -52,14 +52,15 @@ module.exports.movMineral = (request, response) => {
           var existenciaPatios = acarreoTotal - trituradasTotal;
           var existenciaInicial = existenciaPatios + acarreoTotal;
   
-          combinedRows[mina] = {
+          combinedRows[i] = {
+            nombre: mina,
             acarreo: acarreoTotal,
             trituradas: trituradasTotal,
             existenciaPatios: existenciaPatios,
             existenciaInicial: existenciaInicial,
           };
         }
-  
+
         // ENVÍO DE RESPUESTA HTTP
         response.json(combinedRows);
       });
