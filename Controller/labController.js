@@ -143,7 +143,7 @@ module.exports.LabTable = async (req, res) => {
 
 module.exports.LabList = async (req, res) => {
     try {
-        const query = `SELECT MIN(analisis.idAnalisis) AS ID,
+        const query = `SELECT MIN(analisis.idAnalisis) AS id,
                         Mina.nombre AS nombreMina,
                         analisis.fechaEnsaye,
                         MAX(analisis.fechaMuestreo) AS fechaMuestreo
@@ -158,6 +158,10 @@ module.exports.LabList = async (req, res) => {
                     console.error('An error occurred:', err);
                     reject(err);
                 } else {
+                    result.forEach(element => {
+                        element.fechaMuestreo = element.fechaMuestreo.toISOString().split('T')[0];
+                        element.fechaEnsaye = element.fechaEnsaye.toISOString().split('T')[0];
+                    });
                     resolve(res.send(result));
                 }
             });
