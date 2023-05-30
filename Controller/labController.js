@@ -106,27 +106,27 @@ module.exports.LabTable = async (req, res) => {
                     reject(err);
                 } else {
 
-                    let head, report = {};
+                    let head, report = {};//
 
                     head = {
-                        fecha: req.query.fecha,
-                        planta: req.query.planta,
-                        mina: req.query.mina,
+                        fecha: req.query.fecha,//fecha del reporte
+                        planta: req.query.planta,//nombre de la planta
+                        mina: req.query.mina,//nombre de la mina
                     };
 
-                    result.forEach(element => {
-                        if (element.nombre_concentrado) {
-                            if (report[element.turno]) {
-                                if (report[element.turno][element.nombre_concentrado]) {
-                                    report[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;
-                                } else {
-                                    report[element.turno][element.nombre_concentrado] = {};
-                                    report[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;
+                    result.forEach(element => {//itera el resultado de la consulta
+                        if (element.nombre_concentrado) {//si existe el concentrado
+                            if (report[element.turno]){//si existe el turno
+                                if (report[element.turno][element.nombre_concentrado]) {//si existe el concentrado
+                                    report[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;//agrega el elemento
+                                } else {//si no existe el concentrado
+                                    report[element.turno][element.nombre_concentrado] = {};//crea el concentrado
+                                    report[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;//agrega el elemento
                                 }
-                            } else {
-                                report[element.turno] = {};
-                                report[element.turno][element.nombre_concentrado] = {};
-                                report[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;
+                            } else {//si no existe el turno
+                                report[element.turno] = {};//crea el turno
+                                report[element.turno][element.nombre_concentrado] = {};//crea el concentrado
+                                report[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;//agrega el elemento
                             }
                         }
                     
@@ -142,17 +142,6 @@ module.exports.LabTable = async (req, res) => {
 };
 
 module.exports.LabList = async (req, res) => {
-    /*`
-    SELECT analisis.idAnalisis AS ID,
-        Mina.nombre AS nombreMina,
-        analisis.fechaEnsaye,
-        analisis.fechaMuestreo,
-        count(*) as xd
-        FROM analisis
-        INNER JOIN Mina ON Mina.idMina = analisis.idMina
-        WHERE analisis.tms IS NULL
-        GROUP BY analisis.fechaEnsaye
-    `;*/
     try {
         const query = `SELECT MIN(analisis.idAnalisis) AS ID,
                         Mina.nombre AS nombreMina,
