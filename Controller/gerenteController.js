@@ -43,7 +43,7 @@ module.exports.movMineral = (request, response) => {
         }
   
         // OBJETO POR MINA
-        var combinedRows = {};
+        var combinedRows = [];
   
         for (let i = 0; i < rows1.length; i++) {
           var mina = rows1[i].nombre;
@@ -52,22 +52,23 @@ module.exports.movMineral = (request, response) => {
           var existenciaPatios = acarreoTotal - trituradasTotal;
           var existenciaInicial = existenciaPatios + acarreoTotal;
   
-          combinedRows[mina] = {
+          combinedRows[i] = {
+            nombre: mina,
             acarreo: acarreoTotal,
             trituradas: trituradasTotal,
             existenciaPatios: existenciaPatios,
             existenciaInicial: existenciaInicial,
           };
         }
-  
+
         // ENVÍO DE RESPUESTA HTTP
         response.json(combinedRows);
       });
     });
   };  
 
-module.exports.embarque = (request, res) => {
-    const query =   `SELECT 
+  module.exports.embarque = (request, res) => {
+    const query = `SELECT 
                         MINA.nombre AS mina, 
                         CONCENTRADO.nombre as concentrado, 
                         SUM(embarque) AS total
@@ -81,13 +82,40 @@ module.exports.embarque = (request, res) => {
                         MINA.idMina,
                         CONCENTRADO.idConcentrado`
 
-    connection.query(query, (err, result) => {
+    connection.query(query, (err, rows) => {
         if (err) {
             throw err;
         }
+        
+        // OBJETO DE RESULTADO
+        const result = {};
+
+        rows.forEach(row => {
+            const mina = row.mina;
+            const concentrado = row.concentrado;
+            const total = row.total;
+            
+            // VERIFICA SI LA MINA EXISTE EN EL OBJETO
+            if (!result.hasOwnProperty(mina)) {
+                // CREA UN NUEVO OBJETO PARA LA MINA
+                result[mina] = {};
+            }
+
+            // VERIFICA SI EL CONCENTRADO EXISTE EN EL OBJETO DE LA MINA
+            if (!result[mina].hasOwnProperty(concentrado)) {
+                // AGREGA UNA NUEVA PROPIEDAD PARA EL CONCENTRADO
+                result[mina][concentrado] = 0;
+            }
+
+            // SUMA EL TOTAL AL VALOR EXISTENTE
+            result[mina][concentrado] += total;
+        });
+
+        // RESPUESTA
         res.send(result);
     });
 };
+
 
 module.exports.grapHistoricas = (request, response) =>{
     // CONSULTA PARA ACARRADAS
