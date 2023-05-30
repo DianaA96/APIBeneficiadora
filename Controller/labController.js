@@ -149,7 +149,6 @@ module.exports.LabList = async (req, res) => {
                         MAX(analisis.fechaMuestreo) AS fechaMuestreo
                         FROM analisis
                         INNER JOIN Mina ON Mina.idMina = analisis.idMina
-                        WHERE analisis.tms IS NULL
                         GROUP BY analisis.fechaEnsaye, Mina.nombre;`;
 
         await new Promise((resolve, reject) => {
@@ -159,8 +158,10 @@ module.exports.LabList = async (req, res) => {
                     reject(err);
                 } else {
                     result.forEach(element => {
-                        element.fechaMuestreo = element.fechaMuestreo.toISOString().split('T')[0];
-                        element.fechaEnsaye = element.fechaEnsaye.toISOString().split('T')[0];
+                        if (element.fechaMuestreo != null) {
+                            element.fechaMuestreo = element.fechaMuestreo.toISOString().split('T')[0];
+                            element.fechaEnsaye = element.fechaEnsaye.toISOString().split('T')[0];
+                        }
                     });
                     resolve(res.send(result));
                 }
