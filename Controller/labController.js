@@ -2,6 +2,7 @@ const { response, request } = require('express');
 const mysql = require('mysql');
 const config = require('../helpers/config');
 const e = require('express');
+const { NULL } = require('mysql/lib/protocol/constants/types');
 const connection = mysql.createConnection(config, { multipleStatements: true });
 
 connection.connect(error => {
@@ -61,13 +62,16 @@ module.exports.LabReport = async (request, response) => {
             }
         }
         response.send("Reporte generado");
-    } catch (e) {
-        console.log(e);
+    } catch (error) {
+        return response.status(500).json({
+            type: "Error en el servidor",
+            message: error
+        })
     }
 };
 
 //Muestra el reporte de laboratorio segun la fecha enviada
-module.exports.LabTable = async (req, res) => {
+module.exports.LabTable = async (req, response) => {
     try {
         const query = `SELECT 
                     Analisis.idAnalisis AS idAnalisis,
@@ -98,11 +102,11 @@ module.exports.LabTable = async (req, res) => {
                 ORDER BY
                     Analisis.idAnalisis
                 `;
-        
+
         await new Promise((resolve, reject) => {
             connection.query(query, (err, result) => {
                 if (err) {
-                    console.error('An error occurred:', err);
+                    //console.error('An error occurred:', err);
                     reject(err);
                 } else {
 
@@ -116,7 +120,7 @@ module.exports.LabTable = async (req, res) => {
 
                     result.forEach(element => {//itera el resultado de la consulta
                         if (element.nombre_concentrado) {//si existe el concentrado
-                            if (report[element.turno]){//si existe el turno
+                            if (report[element.turno]) {//si existe el turno
                                 if (report[element.turno][element.nombre_concentrado]) {//si existe el concentrado
                                     report[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;//agrega el elemento
                                 } else {//si no existe el concentrado
@@ -129,19 +133,28 @@ module.exports.LabTable = async (req, res) => {
                                 report[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;//agrega el elemento
                             }
                         }
-                    
-                    });
 
-                    resolve(res.send({ head, report }));
+                    });
+                    
+                    if (report === {} || report[0] == null) {//si no existe el reporte
+                        return response.status(404).json({
+                            type: "Sin resultados",
+                            message: "Sin resultados"
+                        })
+                    }
+                    resolve(response.send({ head, report }));
                 }
             });
         });
-    } catch (e) {
-        console.error(e);
-    };
+    } catch (error) {
+        return response.status(500).json({
+            type: "Error en el servidor",
+            message: error,
+        })
+    }
 };
 
-module.exports.LabList = async (req, res) => {
+module.exports.LabList = async (req, response) => {
     try {
         const query = `SELECT MIN(analisis.idAnalisis) AS id,
                         Mina.nombre AS nombreMina,
@@ -154,7 +167,7 @@ module.exports.LabList = async (req, res) => {
         await new Promise((resolve, reject) => {
             connection.query(query, (err, result) => {
                 if (err) {
-                    console.error('An error occurred:', err);
+                    //console.error('An error occurred:', err);
                     reject(err);
                 } else {
                     result.forEach(element => {
@@ -163,12 +176,14 @@ module.exports.LabList = async (req, res) => {
                             element.fechaEnsaye = element.fechaEnsaye.toISOString().split('T')[0];
                         }
                     });
-                    resolve(res.send(result));
+                    resolve(response.send(result));
                 }
             });
         });
-
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        return response.status(500).json({
+            type: "Error en el servidor",
+            message: error
+        })
     }
 };
