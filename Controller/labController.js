@@ -90,9 +90,7 @@ module.exports.LabTable = async (req, response) => {
                     INNER JOIN Planta ON Planta.idPlanta = Analisis.idPlanta
                 WHERE 
                     Mina.nombre LIKE '${req.query.mina}' AND
-                    Planta.nombre LIKE '${req.query.planta}' AND
-                    Analisis.fechaEnsaye LIKE '${req.query.fecha}' AND
-                    TMS IS NULL
+                    Planta.nombre LIKE '${req.query.planta}'
                 GROUP BY 
                     Laboratorio.idConcentrado, 
                     Laboratorio.idElemento, 
@@ -133,10 +131,7 @@ module.exports.LabTable = async (req, response) => {
                                 report[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;//agrega el elemento
                             }
                         }
-
                     });
-                    
-                    
 
                     resolve(response.send({ head, report }));
                 }
