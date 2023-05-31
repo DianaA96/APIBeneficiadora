@@ -136,12 +136,8 @@ module.exports.LabTable = async (req, response) => {
 
                     });
                     
-                    if (report === {} || report[0] == null) {//si no existe el reporte
-                        return response.status(404).json({
-                            type: "Sin resultados",
-                            message: "Sin resultados"
-                        })
-                    }
+                    
+
                     resolve(response.send({ head, report }));
                 }
             });
