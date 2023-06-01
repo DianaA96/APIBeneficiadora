@@ -78,8 +78,8 @@ module.exports.LabTable = async (req, response) => {
                     Concentrado.nombre AS nombre_concentrado,
                     Elemento.nombre AS nombre_elemento,
                     Laboratorio.gton AS gton,    
-                    Mina.nombre AS nombre_mina,
-                    Planta.nombre AS nombre_planta,
+                    #Mina.nombre AS nombre_mina,
+                    #Planta.nombre AS nombre_planta,
                     Analisis.turno AS turno            
                 FROM 
                     Laboratorio 
@@ -90,7 +90,8 @@ module.exports.LabTable = async (req, response) => {
                     INNER JOIN Planta ON Planta.idPlanta = Analisis.idPlanta
                 WHERE 
                     Mina.nombre LIKE '${req.query.mina}' AND
-                    Planta.nombre LIKE '${req.query.planta}'
+                    Planta.nombre LIKE '${req.query.planta}' AND
+                    Analisis.fechaEnsaye LIKE '${req.query.fecha}'
                 GROUP BY 
                     Laboratorio.idConcentrado, 
                     Laboratorio.idElemento, 
@@ -147,13 +148,14 @@ module.exports.LabTable = async (req, response) => {
 
 module.exports.LabList = async (req, response) => {
     try {
-        const query = `SELECT MIN(analisis.idAnalisis) AS id,
+        const query = `SELECT 
                         Mina.nombre AS nombreMina,
                         analisis.fechaEnsaye,
-                        MAX(analisis.fechaMuestreo) AS fechaMuestreo
+                        MIN(analisis.fechaMuestreo) AS fechaMuestreo
                         FROM analisis
                         INNER JOIN Mina ON Mina.idMina = analisis.idMina
-                        GROUP BY analisis.fechaEnsaye, Mina.nombre;`;
+                        GROUP BY analisis.fechaEnsaye, Mina.nombre
+                        ORDER BY analisis.fechaEnsaye DESC;`;
 
         await new Promise((resolve, reject) => {
             connection.query(query, (err, result) => {
