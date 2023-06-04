@@ -10,131 +10,127 @@ connection.connect(error => {
     console.log('Conected Lab');
 });
 
+
 //Genera el reporte de laboratorio
 module.exports.LabReport = async (request, response) => {
     try {
         var bod = request.body;
         const turnos = ["primerT", "segundoT", "tercerT"];
-        var q = 0;
-        let idAnalisis;
-
+        var x = 0;
         for (const turno of turnos) {
-            q++;
-            var sql1 = `INSERT INTO Analisis(idUsuario,idMina,idPlanta,fechaMuestreo,fechaEnsaye,turno) 
-                        values(${bod.idUsuario},${bod.idMina},${bod.idPlanta},'${bod.fechaMuestreo}','${bod.fechaEnsaye}',${(q).toString()});`;
+            x++;
+            for (let i = 0; i < Object.keys(bod[turno]).length; i++) {
+                let concentrado = Object.keys(bod[turno])[i];
+                for (let j = 0; j < Object.keys(bod[turno][concentrado]).length; j++) {
+                    let elemento = Object.keys(bod[turno][concentrado])[j];
+                    let porcentaje = bod[turno][concentrado][elemento];
+                    var sqlIdC = `
+                    INSERT INTO LABORATORIO (idusuario,idMina,idPlanta,fechaMuestreo,fechaEnsaye,idLab,idConcentrado,idElemento,gtonL,turno)
+                    VALUES (?,?,?,?,?,?,
+                           (SELECT idConcentrado FROM Concentrado WHERE nombre LIKE ?),
+                           (SELECT idElemento FROM Elemento WHERE nombre LIKE ?),
+                           ?,?)`;
 
-            await new Promise((resolve, reject) => {//espera al insert de analisis para obtener el idAnalisis
-                connection.query(sql1, (error, rows) => {
-                    if (error) {
-                        console.error('An error occurred:', error);
-                        reject(error);
-                    } else {
-                        resolve(idAnalisis = rows.insertId);
-                    }
-                });
-            });
-
-            for (let i = 0; i < Object.keys(bod[turno]).length; i++) {//intera dependiendo de la cantidad de concentrados Cabeza,colas,etc
-
-                let concentrado = Object.keys(bod[turno])[i];//lee el concentrado
-
-                for (let j = 0; j < Object.keys(bod[turno][concentrado]).length; j++)//itera dependiendo de la cantidad de elementos
-                {
-                    let elemento = Object.keys(bod[turno][concentrado])[j];//lee el elemento
-                    let porcentaje = bod[turno][concentrado][elemento];//lee el porcentaje
-
-                    var sqlIdC = `INSERT INTO Laboratorio(idAnalisis,idConcentrado,idElemento,gton) 
-                                  VALUES(${idAnalisis},(SELECT idConcentrado FROM Concentrado where nombre = '${concentrado}'),
-                                  (SELECT idElemento FROM Elemento where nombre = '${elemento}'),${porcentaje})`;
-
-                    await new Promise((resolve, reject) =>//espera a que se realize el insert de laboratorio para cada porcentaje del elemento iterado
-                    {
-                        connection.query(sqlIdC, (error, rows) => {
-                            if (error) {
-                                console.error('An error occurred:', error);
-                                reject(error);
-                            } else {
-                                resolve();
+                    await new Promise((resolve, reject) => {
+                        connection.query(
+                            sqlIdC,
+                            [
+                                request.body.idusuario,
+                                request.body.idMina,
+                                request.body.idPlanta,
+                                request.body.fechaMuestreo,
+                                request.body.fechaEnsaye,
+                                request.body.idLab,
+                                concentrado,
+                                elemento,
+                                porcentaje,
+                                x
+                            ],
+                            (error, rows) => {
+                                if (error) {
+                                    console.error('An error occurred:', error);
+                                    reject(error);
+                                } else {
+                                    resolve();
+                                }
                             }
-                        });
+                        );
                     });
                 }
             }
         }
-        response.send("Reporte generado");
+        response.send('Reporte generado');
     } catch (error) {
+        console.error('An error occurred:', error);
         return response.status(500).json({
-            type: "Error en el servidor",
+            type: 'Error en el servidor',
             message: error
-        })
+        });
     }
 };
+
 
 //Muestra el reporte de laboratorio segun la fecha enviada
 module.exports.LabTable = async (req, response) => {
     try {
-        const query = `SELECT 
-                    Analisis.idAnalisis AS idAnalisis,
-                    Concentrado.nombre AS nombre_concentrado,
-                    Elemento.nombre AS nombre_elemento,
-                    Laboratorio.gton AS gton,    
-                    #Mina.nombre AS nombre_mina,
-                    #Planta.nombre AS nombre_planta,
-                    Analisis.turno AS turno            
-                FROM 
-                    Laboratorio 
-                    INNER JOIN Analisis ON Laboratorio.idAnalisis = Analisis.idAnalisis 
-                    INNER JOIN Elemento ON Laboratorio.idElemento = Elemento.idElemento
-                    INNER JOIN Concentrado ON Laboratorio.idConcentrado = Concentrado.idConcentrado
-                    INNER JOIN Mina ON Analisis.idmina = Mina.idMina
-                    INNER JOIN Planta ON Planta.idPlanta = Analisis.idPlanta
-                WHERE 
-                    Mina.nombre LIKE '${req.query.mina}' AND
-                    Planta.nombre LIKE '${req.query.planta}' AND
-                    Analisis.fechaEnsaye LIKE '${req.query.fecha}'
-                GROUP BY 
-                    Laboratorio.idConcentrado, 
-                    Laboratorio.idElemento, 
-                    Laboratorio.gton, 
-                    Analisis.idAnalisis, 
-                    Analisis.turno
-                ORDER BY
-                    Analisis.idAnalisis
-                `;
+        const query = `
+        SELECT
+            LABORATORIO.IdLaboratorio AS id,
+            LABORATORIO.IdLab AS idLab,
+            Concentrado.nombre AS nombre_concentrado,
+            Elemento.nombre AS nombre_elemento,
+            gtonL AS gton,
+            Mina.nombre AS nombre_mina,
+            Planta.nombre AS nombre_planta,
+            LABORATORIO.turno AS turno
+        FROM
+            LABORATORIO
+            INNER JOIN Concentrado ON LABORATORIO.idConcentrado = Concentrado.idConcentrado
+            INNER JOIN Elemento ON LABORATORIO.idElemento = Elemento.idElemento
+            INNER JOIN Planta ON LABORATORIO.idPlanta = Planta.idPlanta
+            INNER JOIN Mina ON LABORATORIO.idMina = Mina.idMina
+        WHERE
+            Mina.nombre LIKE '${req.query.mina}' AND
+            Planta.nombre LIKE '${req.query.planta}' AND
+            LABORATORIO.fechaEnsaye LIKE '${req.query.fecha}'
+        ORDER BY
+            LABORATORIO.idLaboratorio ASC;`;
 
         await new Promise((resolve, reject) => {
             connection.query(query, (err, result) => {
                 if (err) {
-                    //console.error('An error occurred:', err);
+                    console.error('Error:', err);
                     reject(err);
                 } else {
+                    if (result.length == 0) {
+                        resolve(response.send({ message: 'No hay resultados' }));
+                    } else {
+                        let head, report = {};
 
-                    let head, report = {};//
+                        head = {
+                            fecha: req.query.fecha,
+                            planta: req.query.planta,
+                            mina: req.query.mina,
+                        };
 
-                    head = {
-                        fecha: req.query.fecha,//fecha del reporte
-                        planta: req.query.planta,//nombre de la planta
-                        mina: req.query.mina,//nombre de la mina
-                    };
-
-                    result.forEach(element => {//itera el resultado de la consulta
-                        if (element.nombre_concentrado) {//si existe el concentrado
-                            if (report[element.turno]) {//si existe el turno
-                                if (report[element.turno][element.nombre_concentrado]) {//si existe el concentrado
-                                    report[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;//agrega el elemento
-                                } else {//si no existe el concentrado
-                                    report[element.turno][element.nombre_concentrado] = {};//crea el concentrado
-                                    report[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;//agrega el elemento
+                        result.forEach(element => {
+                            if (element.nombre_concentrado) {
+                                if (report[element.turno]) {
+                                    if (report[element.turno][element.nombre_concentrado]) {
+                                        report[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;
+                                    } else {
+                                        report[element.turno][element.nombre_concentrado] = {};
+                                        report[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;
+                                    }
+                                } else {
+                                    report[element.turno] = {};
+                                    report[element.turno][element.nombre_concentrado] = {};
+                                    report[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;
                                 }
-                            } else {//si no existe el turno
-                                report[element.turno] = {};//crea el turno
-                                report[element.turno][element.nombre_concentrado] = {};//crea el concentrado
-                                report[element.turno][element.nombre_concentrado][element.nombre_elemento] = element.gton;//agrega el elemento
                             }
-                        }
-                    });
-
-                    resolve(response.send({ head, report }));
+                        });
+                        resolve(response.send({ head, report }));
+                    }
                 }
             });
         });
@@ -148,19 +144,23 @@ module.exports.LabTable = async (req, response) => {
 
 module.exports.LabList = async (req, response) => {
     try {
-        const query = `SELECT 
-                        Mina.nombre AS nombreMina,
-                        analisis.fechaEnsaye,
-                        MIN(analisis.fechaMuestreo) AS fechaMuestreo
-                        FROM analisis
-                        INNER JOIN Mina ON Mina.idMina = analisis.idMina
-                        GROUP BY analisis.fechaEnsaye, Mina.nombre
-                        ORDER BY analisis.fechaEnsaye DESC;`;
+        const query = `SELECT
+                            MAX(LABORATORIO.idLaboratorio) AS id,
+                            Mina.nombre AS nombreMina,
+                            LABORATORIO.fechaEnsaye,
+                            MIN(LABORATORIO.fechaMuestreo) AS fechaMuestreo
+                        FROM 
+                            LABORATORIO
+                            INNER JOIN Mina ON Mina.idMina = LABORATORIO.idMina
+                        GROUP BY 
+                            LABORATORIO.fechaEnsaye
+                        ORDER BY
+                            LABORATORIO.fechaEnsaye DESC;`;
 
         await new Promise((resolve, reject) => {
             connection.query(query, (err, result) => {
                 if (err) {
-                    //console.error('An error occurred:', err);
+                    console.error('An error occurred:', err);
                     reject(err);
                 } else {
                     result.forEach(element => {
