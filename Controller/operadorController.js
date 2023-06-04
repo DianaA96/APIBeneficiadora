@@ -9,7 +9,7 @@ connection.connect(error => {
 });
 
 // Función para insertar los datos en la tabla 'acarreo'
-const insertarAcarreo = (datosAcarreo) => {
+/*const insertarAcarreo = (datosAcarreo) => {
   return new Promise((resolve, reject) => {
     const sql = "INSERT INTO acarreo (idMovimiento, idMina, idSubmina, acarreo, fecha) VALUES ?";
     const valores = datosAcarreo.map(dato => [dato.idMovimiento, dato.idMina, dato.idSubmina, dato.acarreo, dato.fecha]);
@@ -61,12 +61,12 @@ module.exports.operadorReporteD = (req, res) => {
         console.log(error);
         res.status(500).json({ mensaje: "Error al insertar los datos" });
       });
-  }
+  }*/
   
 
 
 // Controlador para procesar la petición GET de consultas múltiples
-module.exports.reporteD = (req, res) => {
+/*module.exports.reporteD = (req, res) => {
   const consultas = [
     "SELECT SUM(acarreo) AS aLaFecha1_1 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN acarreo a ON s.idSubmina = a.idSubmina AND m.idMina = a.idMina WHERE a.idMina = 1 AND a.idSubmina = 1",
     "SELECT SUM(acarreo) AS aLaFecha1_2 FROM mina m JOIN submina s USING(idMina) JOIN mina USING(idMina) JOIN acarreo a ON s.idSubmina = a.idSubmina AND m.idMina = a.idMina WHERE a.idMina = 1 AND a.idSubmina = 2",
@@ -118,19 +118,17 @@ module.exports.reporteD = (req, res) => {
       console.error("Error al ejecutar las consultas:", error);
       res.status(500).json({ error: "Ocurrió un error al procesar las consultas" });
     });
-};
+};*/
 
 
-
-module.exports.existenciaInicial =  (req, res) => {
+module.exports.reporteD =  (req, res) => {
   const consulta = `
-    SELECT s.idMina, s.idSubmina, SUM(acarreo) - SUM(t.trituradas) AS inicial
-    FROM acarreo a
-    JOIN submina USING (idMina)
-    JOIN submina s ON a.idSubmina = s.idSubmina
-    JOIN trituradas t ON s.idSubmina = t.idSubmina
-    JOIN trituradas tr ON s.idMina = tr.idMina
-    GROUP BY s.idMina, s.idSubmina`;
+  select m.nombre as mina,sm.nombre as submina, sum(acarreo) as acarreo, 
+sum(trituradasP1) as P1, sum(trituradasP2) as P2,
+sum(acarreo-(trituradasP1+trituradasP2)) as inicial
+from movimiento_mineral mv join submina sm using(idMina,idSubmina)
+join mina m on m.idMina=sm.idMina
+group by mv.idMina,mv.idSubmina;`;
 
   connection.query(consulta, (error, results) => {
     if (error) {
@@ -141,14 +139,33 @@ module.exports.existenciaInicial =  (req, res) => {
     }
   });
 };
+
+
+/*module.exports.existenciaInicial =  (req, res) => {
+  const consulta = `
+  select sum(acarreo-(trituradasP1+trituradasP2)) as inicial, m.nombre as mina,sm.nombre as submina
+from movimiento_mineral mv join submina sm using(idMina,idSubmina)
+join mina m on m.idMina=sm.idMina
+group by mv.idMina,mv.idSubmina;`;
+
+  connection.query(consulta, (error, results) => {
+    if (error) {
+      console.error('Error al ejecutar la consulta:', error);
+      res.status(500).json({ error: 'Ocurrió un error al procesar la consulta' });
+    } else {
+      res.json(results);
+    }
+  });
+};*/
 
 
 
 module.exports.aLaFechaEmbarque =  (req, res) => {
   const consulta = `
-  select nombre,sum(embarque) as embarque_hist from embarque
-  join mina using(idMina)
-  group by idMina`;
+  select m.nombre as mina, c.nombre, sum(embarque) as embarque
+from mina m join embarque e using(idMina) join
+concentrado c using(idConcentrado)
+group by e.idMina,e.idConcentrado`;
 
   connection.query(consulta, (error, results) => {
     if (error) {
@@ -162,24 +179,61 @@ module.exports.aLaFechaEmbarque =  (req, res) => {
 
 
 
+/*module.exports.insertBascula = (req, res) => {
+  const datosBascula = req.body;
+  const inserts = [];
 
-module.exports.embarqueConcentrados = (req, res) => {
+  datosBascula.forEach(cant => {
+    const { idUsuario, idMina, idSubmina, fecha, acarreo, trituradasP1, trituradasP2 } = cant;
+    inserts.push([idUsuario, idMina, idSubmina, fecha, acarreo, trituradasP1, trituradasP2]);
+  });
+
+  connection.query('INSERT INTO movimiento_mineral (idUsuario, idMina, idSubmina, fecha, acarreo, trituradasP1, trituradasP2) ?', [inserts], (error, results) => {
+    if (error) {
+      console.error('Error al insertar los datos de la bascula:', error);
+      res.status(500).json({ error: 'Ocurrió un error al insertar los datos de la bascula' });
+    } else {
+      res.json({ mensaje: 'Datos de la bascula insertados correctamente' });
+    }
+  });
+};*/
+
+
+module.exports.insertMovimientoMineral = (req, res) => {
+  const datosMovimientoMineral = req.body;
+  const inserts = [];
+
+  datosMovimientoMineral.forEach(dato => {
+    const { idUsuario, idMina, idSubmina, fecha, acarreo, trituradasP1, trituradasP2 } = dato;
+    inserts.push([idUsuario, idMina, idSubmina, fecha, acarreo, trituradasP1, trituradasP2]);
+  });
+
+  connection.query('INSERT INTO movimiento_mineral (idUsuario, idMina, idSubmina, fecha, acarreo, trituradasP1, trituradasP2) VALUES ?', [inserts], (error, results) => {
+    if (error) {
+      console.error('Error al insertar los datos en movimiento_mineral:', error);
+      res.status(500).json({ error: 'Ocurrió un error al insertar los datos en movimiento_mineral' });
+    } else {
+      res.json({ mensaje: 'Datos insertados correctamente en movimiento_mineral' });
+    }
+  });
+};
+
+
+module.exports.embarque = (req, res) => {
   const datosEmbarque = req.body;
   const inserts = [];
 
-  // Generar los inserts para cada combinación de idMina e idConcentrado
-  datosEmbarque.forEach(cant => {
-    const { idMina, idConcentrado, embarque, fecha } = cant;
-    inserts.push([idMina, idConcentrado, embarque, fecha]);
+  datosEmbarque.forEach(dato => {
+    const { idMina,idConcentrado,idUsuario,fecha,embarque } = dato;
+    inserts.push([idMina,idConcentrado,idUsuario,fecha,embarque]);
   });
 
-  // Insertar los datos del embarque en la base de datos
-  connection.query('INSERT INTO embarque (idMina, idConcentrado, embarque, fecha) VALUES ?', [inserts], (error, results) => {
+  connection.query('INSERT INTO embarque (idMina,idConcentrado,idUsuario,fecha,embarque) VALUES ?', [inserts], (error, results) => {
     if (error) {
-      console.error('Error al insertar los datos del embarque:', error);
-      res.status(500).json({ error: 'Ocurrió un error al insertar los datos del embarque' });
+      console.error('Error al insertar los datos en embarque:', error);
+      res.status(500).json({ error: 'Ocurrió un error al insertar los datos en embarque' });
     } else {
-      res.json({ mensaje: 'Datos del embarque insertados correctamente' });
+      res.json({ mensaje: 'Datos insertados correctamente en embarque' });
     }
   });
 };
