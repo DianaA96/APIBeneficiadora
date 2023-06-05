@@ -359,7 +359,7 @@ module.exports.balance = (request, res) => {
     var sql = `SELECT 
                 CONCENTRADO.nombre AS concentrado, 
                 ELEMENTO.nombre AS elemento, 
-                MAX(gtonR),
+                gtonR,
                 MAX(tms)
               FROM 
                 elemento JOIN reporte USING(idElemento)
@@ -436,7 +436,7 @@ module.exports.movMineral = (request, response) => {
     for (let i = 0; i < rows.length; i++) {
       var mina = rows[i].nombre;
       var acarreoTotal = rows[i]['acarreo'];
-      var trituradasTotal = rows[i]['trituradas'];
+      var trituradasTotal = rows[i]['trituradas1'] + rows[i]['trituradas2'];
       var existenciaPatios = acarreoTotal - trituradasTotal;
       var existenciaInicial = existenciaPatios + acarreoTotal;
 
