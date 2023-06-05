@@ -144,18 +144,23 @@ module.exports.LabTable = async (req, response) => {
 
 module.exports.LabList = async (req, response) => {
     try {
-        const query = `SELECT
-                            MAX(LABORATORIO.idLaboratorio) AS id,
-                            Mina.nombre AS nombreMina,
-                            LABORATORIO.fechaEnsaye,
-                            MIN(LABORATORIO.fechaMuestreo) AS fechaMuestreo
-                        FROM 
-                            LABORATORIO
-                            INNER JOIN Mina ON Mina.idMina = LABORATORIO.idMina
-                        GROUP BY 
-                            LABORATORIO.fechaEnsaye
-                        ORDER BY
-                            LABORATORIO.fechaEnsaye DESC;`;
+        const query = `
+        SELECT
+            l.fechaEnsaye,
+            l.fechaMuestreo,
+            l.idLab AS id,
+            m.nombre AS nombreMina
+        FROM
+            LABORATORIO l
+        JOIN
+            MINA m ON l.idMina = m.idMina
+        GROUP BY
+            l.fechaEnsaye,
+            l.fechaMuestreo,
+            l.idLab,
+            m.nombre
+        ORDER BY
+            l.fechaEnsaye DESC;`;
 
         await new Promise((resolve, reject) => {
             connection.query(query, (err, result) => {
