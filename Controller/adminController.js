@@ -96,44 +96,133 @@ module.exports.READG = (request, response ) => {
 
 /* Este codigo genera los reportes y luego lo relaciona con las tablas 
 de cada concentrado y a su vez con cada uno de los elementos */
-module.exports.GenerateReport = (request, response ) => {
+/*module.exports.GenerateReport = (request, response ) => {
 
     var bod = request.body
-    console.log(bod)
-    var sql1 = `INSERT INTO Analisis(TMS,idUsuario,idMina) values(${bod.tms},${bod.idUsuario},${bod.idMina});` //Aqui se crea el reporte
+    var sql1 = `INSERT INTO REPORTE(idMina,fecha,humedad) values(${bod.idMina},'${bod.fecha}', ${bod.humedad});` //Aqui se crea el reporte
     connection.query(sql1, (error, rows) =>{
         if (error){
             response.send(error)
         }else{
-            let idAnalisis = rows.insertId //Guardas el id nuevo que es el id del reporte nuevo generado
-
+            
+            let idReporte = rows.insertId //Guardas el id nuevo que es el id del reporte nuevo generado
             //El primer for con la funcion Object Keys lee los concentrados por nombre y los convierte en id 
             for (let i = 0; i < Object.keys(bod.Concentrados).length; i++) {
                 let concentrado = Object.keys(bod.Concentrados)[i] //Se guarda el concentrado que es
-                
-
-                //El segundo for con la funcion Object Keys lee los elementos por nombre y los convierte en id
-                for (let j = 0; j < Object.keys(bod.Concentrados[concentrado]).length; j++) {
-                    let elemento = Object.keys(bod.Concentrados[concentrado])[j] //Guarda el elemento que es
-                
-                    let porcentaje = bod.Concentrados[concentrado][elemento] //Guarda el porcentaje del elemento
-
-                    //El siguiente sql almacena los valores en la tabña por medio de id.
-                    var sqlIdC = `INSERT INTO Laboratorio(idAnalisis,idConcentrado,idElemento,gton) values(${idAnalisis},(SELECT idConcentrado FROM Concentrado where nombre = '${concentrado}'),(SELECT idElemento FROM Elemento where nombre = '${elemento}'),${porcentaje})`
-                    connection.query(sqlIdC, (error, rows) =>{
+                var json = { ...bod.Concentrados[concentrado]};
+                var jsonString = JSON.stringify(json);
+                var jsonSql = jsonString.replace(/'/g).replace(/(\d+)/g, "$1");
+                console.log(jsonSql);
+                var sqlIdC = `INSERT INTO Concentrado_Reporte(idReporte,idConcentradoJ,elementos) values(${idReporte},(SELECT idConcentradoJ FROM ConcentradoJ where nombre = '${concentrado}'),'${jsonSql}')`
+                connection.query(sqlIdC, (error, rows) => {
                     if (error){
                         response.send(error)
+                    }else{
+
+                        console.log(rows)
                     }
-                    })
-                    
-                }
+                })
+                
             }
             
             
         }
     })
 
+}*/
+
+module.exports.GenerateReport = (request, response ) => {
+    var bod = request.body
+    let now = new Date()
+    let fechaSQL = now.toISOString().slice(0, 19).replace('T', ' ');
+    try{
+        var sqlCheck = `Select (idRep) from REPORTE Where fecha = '${bod.fecha}' and idMina = ${bod.idMina}`
+        connection.query(sqlCheck, async(error, results, fields) => {
+            if (error) 
+                response.send(error)
+            if (results == "") {
+                    //El primer for con la funcion Object Keys lee los concentrados por nombre y los convierte en id 
+                for (let i = 0; i < Object.keys(bod.Concentrados).length; i++) {
+                    let concentrado = Object.keys(bod.Concentrados)[i] //Se guarda el concentrado que es
+                    
+                        //El segundo for con la funcion Object Keys lee los elementos por nombre y los convierte en id
+                        for (let j = 0; j < Object.keys(bod.Concentrados[concentrado]).length; j++) {
+                            let elemento = Object.keys(bod.Concentrados[concentrado])[j] //Guarda el elemento que es  
+                            let porcentaje = bod.Concentrados[concentrado][elemento] //Guarda el porcentaje del elemento
+                
+                            //El siguiente sql almacena los valores en la tabña por medio de id.
+                            var sql = `INSERT INTO REPORTE(idRep,idConcentrado, idElemento, idMina, TMS, gtonR, fecha,humedad) values (${bod.idRep},(SELECT idConcentrado FROM Concentrado where nombre = '${concentrado}'),(SELECT idElemento FROM Elemento where nombre = '${elemento}'),${bod.idMina},${bod.tms},${porcentaje},'${bod.fecha}',${bod.humedad});`
+                
+                            connection.query(sql, (error, rows) =>{
+                                if (error){
+                                    response.send(error)
+                                }
+                            })
+                                    
+                        }
+                    }
+                    if (bod.precioConZn != undefined) {
+                        var sqlPrecioZn = `INSERT INTO Precio_Concentrado(idConcentrado,precio,fecha) values ((SELECT idConcentrado FROM Concentrado where nombre = 'Zn'),${bod.precioConZn},'${fechaSQL}')`
+                        connection.query(sqlPrecioZn, (error, rows) =>{
+                            if (error){
+                                response.send(error)
+                            }
+                        }) 
+                    }
+                
+                    if(bod.precioConCu != undefined){
+                        var sqlPrecioCu = `INSERT INTO Precio_Concentrado(idConcentrado,precio,fecha) values ((SELECT idConcentrado FROM Concentrado where nombre = 'Cu'),${bod.precioConCu},'${fechaSQL}')`
+                        connection.query(sqlPrecioCu, (error, rows) =>{
+                            if (error){
+                                response.send(error)
+                            }
+                        })
+                    }
+                return response.status(201).json({
+                        message: `Reporte creado con exito`
+                })
+            }else{
+                return response.status(406).json({
+                    message: `Reporte ya existente`
+                })
+            }
+        })
+    }catch (error){
+        return response.status(500).json({
+            message: `Error del servidor`
+        })
+    }
 }
+
+module.exports.Acumulado = (request,response) =>{
+    console.log(request.params.fecha)
+    var concentradoZn = 0
+    var concentradoCu = 0
+    var sqlZn = `SELECT SUM(precio) AS total_precios_Zn FROM Precio_Concentrado NATURAL JOIN Concentrado WHERE fecha <= DATE_ADD('${request.params.fecha}' , INTERVAL 1 DAY) and Concentrado.nombre = 'Zn';`
+    var sqlCu = `SELECT SUM(precio) AS total_precios_Cu FROM Precio_Concentrado NATURAL JOIN Concentrado WHERE fecha <= DATE_ADD('${request.params.fecha}' , INTERVAL 1 DAY) and Concentrado.nombre = 'Cu';`
+    
+    connection.query(sqlZn, (error, rows) => {
+        if (error) {
+            response.send(error);
+        } else {
+            concentradoZn = rows[0].total_precios_Zn;
+            connection.query(sqlCu, (error, rows) => {
+                if (error) {
+                    response.send(error);
+                } else {
+                    concentradoCu = rows[0].total_precios_Cu;
+                    let obj = {
+                        AcumuladoZn: concentradoZn,
+                        AcumuladoCu: concentradoCu
+                    };
+                    return response.json(obj);
+                }
+            });
+        }
+    });    
+
+}
+
 
 module.exports.EditPrecios = (request, response) =>{
     var bod = request.body
@@ -150,6 +239,6 @@ module.exports.EditPrecios = (request, response) =>{
             return response.status(200).json({
                 message: `Actualizado`})
         }
-        })
+    })
 
 }
