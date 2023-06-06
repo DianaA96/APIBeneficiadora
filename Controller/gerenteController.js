@@ -30,7 +30,8 @@ module.exports.reporteBascula = (req, res) => {
     SUM(acarreo) AS mensual
     FROM movimiento_mineral mv
     JOIN mina m ON m.idMina = mv.idMina
-    WHERE m.nombre = '${nombreMina}' AND MONTH(fecha) = MONTH('${fecha}')`;
+    WHERE m.nombre = '${nombreMina}' AND MONTH(fecha) = MONTH('${fecha}') and
+    year(fecha) = year('${fecha}')`;
 
   const consulta3 = `SELECT 
     SUM(acarreo) AS acarreoHoy,
