@@ -11,5 +11,6 @@ router.post('/create', controller.CREATE)
 router.post('/createReport',controller.GenerateReport)
 router.post('/elemento-precio', controller.EditPrecios)
 router.get('/getEdit/:id', controller.GetForEdit)
+router.get('/acumulados/:fecha', controller.Acumulado)
 
 module.exports = router

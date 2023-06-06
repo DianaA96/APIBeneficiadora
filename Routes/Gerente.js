@@ -3,6 +3,7 @@ var router = express.Router();
 
 var controller = require ('../Controller/gerenteController')
 
+router.get('/reporteBascula', controller.reporteBascula)
 router.get('/movMineral', controller.movMineral)
 router.get('/embarque', controller.embarque)
 router.get('/grapHistoricas', controller.grapHistoricas)
