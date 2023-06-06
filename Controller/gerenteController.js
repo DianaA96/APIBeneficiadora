@@ -426,10 +426,11 @@ module.exports.balance = (request, res) => {
                 JOIN concentrado USING(idConcentrado)
               WHERE 
                 fecha = '${request.query.fecha}' AND
-                CONCENTRADO.nombre = 'Pb' OR
+                (CONCENTRADO.nombre = 'Pb' OR
                 CONCENTRADO.nombre = 'Zn' OR 
                 CONCENTRADO.nombre = 'Cabeza' OR
-                CONCENTRADO.nombre = 'Colas'`
+                CONCENTRADO.nombre = 'Colas') AND
+                idMina = '${request.query.idMina}'`
 
   connection.query(sql, (error, rows) => {
     if (error) {
@@ -491,7 +492,6 @@ module.exports.movMineral = (request, response) => {
       var trituradasTotal = rows[i]['trituradas1'] + rows[i]['trituradas2'];
       var existenciaPatios = acarreoTotal - trituradasTotal;
       var existenciaInicial = existenciaPatios + acarreoTotal;
-      // ACUMULADO DEL MES 
 
       combinedRows[i] = {
         nombre: mina,
@@ -553,8 +553,6 @@ module.exports.embarque = (request, response) => {
   });
 };
 
-// ARREGLO DEMINAS
-// OBJETO X MES 
 
 /*
 en orden de minas
@@ -569,12 +567,12 @@ en orden de minas
     5
   ]
   en orden de ...
-  concentrado [
-    3 [45, 67, 43],
-    6
-    7
-  ]
-*/
+  [
+    1 [45, 67, 43],
+    2 [45, 456, 564]
+    3....
+  ]*/
+
 module.exports.grapHistoricas = (request, response) => {
   // CONSULTA PARA ACARRADAS Y TRITURADAS
   var query = `SELECT 
@@ -597,6 +595,31 @@ module.exports.grapHistoricas = (request, response) => {
         return;
     }
 
+    const trituradas = [];
+    const acarreo = [];
+
+    rows1.forEach(row => {
+      const mes = row.mes;
+      const trituradasValue = row.trituradas1 + row.trituradas2;
+      const acarreoValue = row.acarreo;
+
+      if (!trituradas.hasOwnProperty(mes)) {
+        trituradas[mes] = [];
+      }
+
+      if (!acarreo.hasOwnProperty(mes)) {
+        acarreo[mes] = [];
+      }
+
+      trituradas[mes].push(trituradasValue);
+      acarreo[mes].push(acarreoValue);
+    });
+
+    const result1 = {
+      trituradas: trituradas,
+      acarreo: acarreo
+    };
+
     // CONSULTA PARA CONCENTRADOS
     var concentrados =  `SELECT 
                             MONTH(fecha) AS mes, 
@@ -618,14 +641,81 @@ module.exports.grapHistoricas = (request, response) => {
           return;
       }
 
+      const result = [];
+
+      rows2.forEach(row => {
+        const mes = row.mes;
+        const total = row.totalConcentrados;
+
+        if (!result.hasOwnProperty(mes)) {
+          result[mes] = [];
+        }
+
+        result[mes].push(total);
+      });
+
       // OBJETO QUE SE RETORNA
       var combinedRows = {
-        acarreo: rows1,
-        concentrados: rows2
+        acarreo: result1,
+        concentrados: result
       };
 
       // ENVÍO DE RESPUESTA HTTP
       response.json(combinedRows);
-    });
+
+      });
   });
 };
+
+module.exports.grapHistoricas = (request, response) => {
+  // CONSULTA PARA ACARRADAS Y TRITURADAS
+  var query = `SELECT 
+                MINA.nombre,
+                MONTH(fecha) AS mes,
+                SUM(acarreo),
+                SUM(trituradasP1) AS 'trituradas1',
+                SUM(trituradasP2) AS 'trituradas2'
+              FROM mina 
+                JOIN movimiento_mineral USING(idMina)
+              WHERE
+                fecha IS NOT NULL
+              GROUP BY
+                MONTH(fecha),
+                MINA.nombre`;
+
+  connection.query(query, (error, rows) => {
+    if (error) {
+      response.send(error);
+    }
+
+    const trituradas = {};
+    const acarreo = {};
+
+    rows.forEach(row => {
+      const mes = row.mes;
+      const trituradasValue = row.trituradas1 + row.trituradas2;
+      const acarreoValue = row.acarreo;
+
+      if (!trituradas.hasOwnProperty(mes)) {
+        trituradas[mes] = [];
+      }
+
+      if (!acarreo.hasOwnProperty(mes)) {
+        acarreo[mes] = [];
+      }
+
+      trituradas[mes].push(trituradasValue);
+      acarreo[mes].push(acarreoValue);
+    });
+
+    const result = {
+      trituradas: trituradas,
+      acarreo: acarreo
+    };
+
+    response.json(result);
+  });
+};
+
+
+
