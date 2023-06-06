@@ -8,8 +8,6 @@ connection.connect(error => {
     console.log('Conected gerente'); 
 });
 
-
-
 module.exports.reporteBascula = (req, res) => {
   const fecha = req.params.fecha;
   const nombreMina = 'Minesites';
@@ -204,26 +202,6 @@ module.exports.embarque = (request, response) => {
   });
 };
 
-
-/*
-en orden de minas
-  trituradas [
-    1 [45, 67, 43],
-    2
-    3
-  ]
-  acarreo [
-    2 [45, 67, 43],
-    4
-    5
-  ]
-  en orden de ...
-  [
-    1 [45, 67, 43],
-    2 [45, 456, 564]
-    3....
-  ]*/
-
 module.exports.grapHistoricas = (request, response) => {
   // CONSULTA PARA ACARRADAS Y TRITURADAS
   var query = `SELECT 
@@ -310,3 +288,22 @@ module.exports.grapHistoricas = (request, response) => {
     });
   });
 };
+
+module.exports.balanceTable = (request, response) =>{
+  var sql = `SELECT 
+              idMovimiento, 
+              fecha, 
+              SUM(acarreo) AS 'acarreo',
+              SUM(trituradasP1 + trituradasP2) AS 'trituradas',
+              SUM(acarreo-(trituradasP1+trituradasP2)) AS 'patios'
+            FROM 
+              movimiento_mineral
+            GROUP BY 
+              fecha`
+
+  connection.query(sql, (error, rows) =>{
+      if (error) 
+          response.send(error)
+      response.json(rows)
+  })
+}

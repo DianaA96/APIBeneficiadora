@@ -9,5 +9,6 @@ router.get('/embarque', controller.embarque)
 router.get('/grapHistoricas', controller.grapHistoricas)
 //router.get('/historialBascula', controller.historialBascula)
 router.get('/balance', controller.balance)
+router.get('/balanceTable', controller.balanceTable)
 
 module.exports = router
