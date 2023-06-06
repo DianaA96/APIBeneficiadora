@@ -1,13 +1,12 @@
 require('dotenv').config();
 
-/*var config = {
+var config = {
     host: process.env.DBhost,
     user: process.env.DBuser,
     password: process.env.DBpassword,
     database: process.env.Namedatabase,
     port: process.env.DBport
 }
-*/
 
 /* 
 var config = {
@@ -16,6 +15,6 @@ var config = {
     password: 'root',
     database: 'dbpurisima',
     port: 8889
-}
+}*/
 
-module.exports = config*/
+module.exports = config
