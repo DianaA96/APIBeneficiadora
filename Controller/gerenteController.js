@@ -8,6 +8,65 @@ connection.connect(error => {
     console.log('Conected gerente'); 
 });
 
+
+module.exports.reporteBascula = (req, res) => {
+  const fecha = req.params.fecha;
+  const nombreMina = 'Minesites';
+
+  const consulta1 = `SELECT 
+    SUM(acarreo - (trituradasP1 + trituradasP2)) AS inicial,
+    SUM(trituradasP1 + trituradasP2) AS molidasAcum
+    FROM movimiento_mineral mv
+    JOIN mina m ON m.idMina = mv.idMina
+    WHERE m.nombre = '${nombreMina}'`;
+
+  const consulta2 = `SELECT 
+    SUM(acarreo) AS mensual
+    FROM movimiento_mineral mv
+    JOIN mina m ON m.idMina = mv.idMina
+    WHERE m.nombre = '${nombreMina}' AND MONTH(fecha) = MONTH('${fecha}')`;
+
+  const consulta3 = `SELECT 
+    SUM(acarreo) AS acarreoHoy,
+    (trituradasP1 + trituradasP2) AS trituradasHoy
+    FROM movimiento_mineral mv
+    JOIN mina m ON m.idMina = mv.idMina
+    WHERE m.nombre = '${nombreMina}' AND DATE(fecha) = '${fecha}'`;
+
+  const resultado = {};
+
+  connection.query(consulta1, (error, results1) => {
+    if (error) {
+      console.error('Error en la consulta 1:', error);
+      resultado.inicial = { error: 'Ocurrió un error en la consulta 1' };
+    } else {
+      resultado.inicial = results1[0];
+    }
+
+    connection.query(consulta2, (error, results2) => {
+      if (error) {
+        console.error('Error en la consulta 2:', error);
+        resultado.mensual = { error: 'Ocurrió un error en la consulta 2' };
+      } else {
+        resultado.mensual = results2[0];
+      }
+
+      connection.query(consulta3, (error, results3) => {
+        if (error) {
+          console.error('Error en la consulta 3:', error);
+          resultado.hoy = { error: 'Ocurrió un error en la consulta 3' };
+        } else {
+          resultado.hoy = results3[0];
+        }
+
+        res.json(resultado);
+      });
+    });
+  });
+};
+
+
+
 /*module.exports.movMineral = (request, response) => {
     // CONSULTA PARA ACARRADAS
     var acarreo = `SELECT 
