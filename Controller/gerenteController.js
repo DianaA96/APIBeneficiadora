@@ -9,21 +9,27 @@ connection.connect(error => {
 });
 
 module.exports.reporteBascula = (req, res) => {
-  const fecha = req.params.fecha;
-  const nombreMina = 'Minesites';
+  const fecha = req.query.fecha.replace(/'/g, '');
+  const nombreMina = req.query.nombreMina.replace(/'/g, '');
+  console.log(fecha)
+  console.log(nombreMina)
 
-  const consulta1 = `SELECT 
-    SUM(acarreo - (trituradasP1 + trituradasP2)) AS inicial,
-    SUM(trituradasP1 + trituradasP2) AS molidasAcum
-    FROM movimiento_mineral mv
-    JOIN mina m ON m.idMina = mv.idMina
-    WHERE m.nombre = '${nombreMina}'`;
+  const consulta1 = `select 
+  sum(acarreo-(trituradasP1+trituradasP2)) as inicial,
+  sum(trituradasP1+trituradasP2) as molidasAcum
+  from movimiento_mineral mv
+  join mina m on m.idMina=mv.idMina
+  where m.nombre='${nombreMina}' and
+  '${fecha}'<= fecha and
+  month(fecha) = month('${fecha}') and
+  year(fecha) = year('${fecha}');`;
 
   const consulta2 = `SELECT 
     SUM(acarreo) AS mensual
     FROM movimiento_mineral mv
     JOIN mina m ON m.idMina = mv.idMina
-    WHERE m.nombre = '${nombreMina}' AND MONTH(fecha) = MONTH('${fecha}')`;
+    WHERE m.nombre = '${nombreMina}' AND MONTH(fecha) = MONTH('${fecha}') and
+    year(fecha) = year('${fecha}')`;
 
   const consulta3 = `SELECT 
     SUM(acarreo) AS acarreoHoy,
