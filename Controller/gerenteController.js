@@ -9,6 +9,7 @@ connection.connect(error => {
 });
 
 
+
 module.exports.reporteBascula = (req, res) => {
   const fecha = req.params.fecha;
   const nombreMina = 'Minesites';
@@ -419,57 +420,49 @@ module.exports.balance = (request, res) => {
                 CONCENTRADO.nombre AS concentrado, 
                 ELEMENTO.nombre AS elemento, 
                 gtonR,
-                MAX(tms)
+                tms
               FROM 
                 elemento JOIN reporte USING(idElemento)
                 JOIN concentrado USING(idConcentrado)
               WHERE 
-                fecha = '${request.query.fecha}'
-              GROUP BY 
-                CONCENTRADO.nombre,
-                ELEMENTO.nombre`
+                fecha = '${request.query.fecha}' AND
+                CONCENTRADO.nombre = 'Pb' OR
+                CONCENTRADO.nombre = 'Zn' OR 
+                CONCENTRADO.nombre = 'Cabeza' OR
+                CONCENTRADO.nombre = 'Colas'`
 
-    connection.query(sql, (error, rows) => {
-        if (error) { 
-          response.send(error);
-          return;
-        }
+  connection.query(sql, (error, rows) => {
+    if (error) {
+      response.send(error);
+    }
 
-        // OBJETO DE RESULTADO
-        const result = {};
-        let tms = 0;
+    const result = {};
 
-        rows.forEach(row => {
-            const concentrado = row.concentrado;
-            const elemento = row.elemento;
-            const total = row.gtonR;
-            tms = row.tms;
+    rows.forEach(row => {
+      const concentrado = row.concentrado;
+      const elemento = row.elemento;
+      const total = row.gtonR;
+      const tms = row.tms;
 
-            // VERIFICA SI LA MINA EXISTE EN EL OBJETO
-            if (!result.hasOwnProperty(concentrado)) {
-                // CREA UN NUEVO OBJETO PARA LA MINA
-                result[concentrado] = {};
-            }
+      // VERIFICA SI CONCENTRADO EXISTE
+      if (!result.hasOwnProperty(concentrado)) {
+        // OBJETO PARA CONCENTRADO
+        result[concentrado] = {
+          tms: tms
+        };
+      }
 
-            // VERIFICA SI EL CONCENTRADO EXISTE EN EL OBJETO DE LA MINA
-            if (!result[concentrado].hasOwnProperty(elemento)) {
-                // AGREGA UNA NUEVA PROPIEDAD PARA EL CONCENTRADO
-                result[concentrado][elemento] = 0;
-            }
+      // VERIFICA SI CONCENTRADO EXISTE
+      if (!result[concentrado].hasOwnProperty(elemento)) {
+        // ELEMENTO PARA ELEMENTO
+        result[concentrado][elemento] = total;
+      }
+    });
 
-            // SUMA EL TOTAL AL VALOR EXISTENTE
-            result[concentrado][elemento] += total;
-        });
-
-        result.tms = tms;
-
-        // RESPUESTA
-        response.send(result);
-      });
+    response.json(result);
+  });
 };
 
-
-// CORREGIR
 module.exports.movMineral = (request, response) => {
   var query = `SELECT 
                   MINA.nombre,
@@ -498,6 +491,7 @@ module.exports.movMineral = (request, response) => {
       var trituradasTotal = rows[i]['trituradas1'] + rows[i]['trituradas2'];
       var existenciaPatios = acarreoTotal - trituradasTotal;
       var existenciaInicial = existenciaPatios + acarreoTotal;
+      // ACUMULADO DEL MES 
 
       combinedRows[i] = {
         nombre: mina,
@@ -559,6 +553,28 @@ module.exports.embarque = (request, response) => {
   });
 };
 
+// ARREGLO DEMINAS
+// OBJETO X MES 
+
+/*
+en orden de minas
+  trituradas [
+    1 [45, 67, 43],
+    2
+    3
+  ]
+  acarreo [
+    2 [45, 67, 43],
+    4
+    5
+  ]
+  en orden de ...
+  concentrado [
+    3 [45, 67, 43],
+    6
+    7
+  ]
+*/
 module.exports.grapHistoricas = (request, response) => {
   // CONSULTA PARA ACARRADAS Y TRITURADAS
   var query = `SELECT 
