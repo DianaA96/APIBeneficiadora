@@ -7,8 +7,9 @@ router.get('/reporteBascula', controller.reporteBascula)
 router.get('/movMineral', controller.movMineral)
 router.get('/embarque', controller.embarque)
 router.get('/grapHistoricas', controller.grapHistoricas)
-//router.get('/historialBascula', controller.historialBascula)
 router.get('/balance', controller.balance)
-router.get('/balanceTable', controller.balanceTable)
+router.get('/movMineralTable', controller.movMineralTable)
+
+//router.get('/reporteTable', controller.reporteTable)
 
 module.exports = router
