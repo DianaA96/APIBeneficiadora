@@ -295,21 +295,88 @@ module.exports.grapHistoricas = (request, response) => {
   });
 };
 
-module.exports.balanceTable = (request, response) =>{
-  var sql = `SELECT 
-              idMovimiento, 
-              fecha, 
-              SUM(acarreo) AS 'acarreo',
-              SUM(trituradasP1 + trituradasP2) AS 'trituradas',
-              SUM(acarreo-(trituradasP1+trituradasP2)) AS 'patios'
-            FROM 
-              movimiento_mineral
-            GROUP BY 
-              fecha`
+module.exports.movMineralTable = (request, response) => {
+  const sql = `SELECT
+                idMovimiento, 
+                SUM(acarreo) AS acarreo,
+                SUM(trituradasP1 + trituradasP2) AS trituradas,
+                SUM(acarreo-(trituradasP1+trituradasP2)) as patios,
+                fecha
+              FROM 
+                movimiento_mineral
+              GROUP BY 
+                fecha`;
+
+  connection.query(sql, (error, rows) => {
+    if (error) {
+      response.send(error);
+      return;
+    }
+
+    const combinedRows = [];
+
+    let completedQueries = 0; // Contador para realizar un seguimiento de las consultas completadas
+
+    for (let i = 0; i < rows.length; i++) {
+      const acarreo = rows[i].acarreo;
+      const trituradas = rows[i].trituradas;
+      const patios = rows[i].patios;
+      const id = rows[i].idMovimiento;
+      const fecha = rows[i].fecha;
+
+      const inicial = `SELECT
+                        SUM(acarreo-(trituradasP1+trituradasP2)) as inicial
+                      FROM 
+                        movimiento_mineral
+                      WHERE 
+                        fecha = DATE_SUB('${fecha}', INTERVAL 1 DAY)`;
+
+      connection.query(inicial, (error, rows2) => {
+        if (error) {
+          response.send(error);
+          return;
+        }
+
+        const inicialValue = rows2[0].inicial + trituradas;
+
+        combinedRows[i] = {
+          id: id,
+          fecha: fecha,
+          acarreo: acarreo,
+          trituradas: trituradas,
+          patios: patios,
+          inicial: inicialValue,
+        };
+
+        completedQueries++;
+
+        // Verificar si todas las consultas se han completado
+        if (completedQueries === rows.length) {
+          // ENVÍO DE RESPUESTA HTTP
+          response.json(combinedRows);
+        }
+      });
+    }
+  });
+};
+
+
+/*
+module.exports.movMineralTable = (request, response) =>{
+  const sql = `SELECT
+                idMovimiento, 
+                SUM(acarreo) AS acarreo,
+                SUM(trituradasP1 + trituradasP2) AS trituradas,
+                SUM(acarreo-(trituradasP1+trituradasP2)) as patios,
+                fecha
+              FROM 
+                movimiento_mineral
+              GROUP BY 
+                fecha`;
 
   connection.query(sql, (error, rows) =>{
       if (error) 
           response.send(error)
       response.json(rows)
   })
-}
+}*/
