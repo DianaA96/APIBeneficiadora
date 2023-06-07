@@ -10,5 +10,6 @@ router.get('/grapHistoricas', controller.grapHistoricas)
 router.get('/balance', controller.balance)
 router.get('/movMineralTable', controller.movMineralTable)
 router.get('/reporteTable', controller.reporteTable)
+router.get('/grapliquidacion', controller.grapliquidacion)
 
 module.exports = router

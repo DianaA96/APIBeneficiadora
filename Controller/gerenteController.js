@@ -425,3 +425,267 @@ module.exports.reporteTable = (request, response) => {
     });
   });
 }
+
+/*
+module.exports.liquidacion = (request, response) => {
+  const sql = `SELECT
+                idReporte, 
+                REPORTE.fecha AS fecha,
+                (PRECIO_CONCENTRADO.precio * tms) AS Cu
+              FROM 
+                reporte JOIN concentrado USING(idConcentrado)
+                JOIN precio_concentrado USING(idConcentrado)
+              WHERE
+                CONCENTRADO.nombre = 'Cu' 
+              GROUP BY 
+                REPORTE.fecha`;
+
+  connection.query(sql, (error, rowsCu) => {
+    if (error) {
+      response.send(error);
+      return;
+    }
+
+    const query = `SELECT
+                    idReporte, 
+                    REPORTE.fecha AS fecha,
+                    (PRECIO_CONCENTRADO.precio * tms) AS Zn,
+                    tms
+                  FROM 
+                    reporte JOIN concentrado USING(idConcentrado)
+                    JOIN precio_concentrado USING(idConcentrado)
+                  WHERE
+                    CONCENTRADO.nombre = 'Zn' 
+                  GROUP BY 
+                    REPORTE.fecha`;
+
+    connection.query(query, (error, rowsZn) => {
+      if (error) {
+        response.send(error);
+        return;
+      }
+
+      var combinedRows = [];
+
+      for (let i = 0; i < rowsCu.length; i++) {
+        var idReporte = rowsCu[i].idReporte;
+        var fecha = rowsZn[i].fecha;
+        var cu = rowsCu[i].Cu;
+        var zn = rowsZn[i].Zn;
+        var liquidacion = rowsCu[i].Cu + rowsZn[i].Zn;
+        var valor = liquidacion / rowsZn[i].tms;
+
+        combinedRows[i] = {
+          idReporte: idReporte,
+          fecha: fecha,
+          cu: cu,
+          zn: zn,
+          liquidacionHoy: liquidacion,
+          valor: valor
+        };
+      }
+
+      // ENVÍO DE RESPUESTA HTTP
+      response.json(combinedRows);
+    });
+  });
+}*/
+
+/*
+module.exports.grapliquidacion = (request, response) => {
+  const sql = `SELECT 
+                precio,
+                MONTH(fecha) AS mes,
+                CONCENTRADO.nombre
+              FROM 
+                concentrado JOIN precio_concentrado USING(idConcentrado)
+              GROUP BY
+                mes,
+                YEAR(fecha),
+                CONCENTRADO.nombre`;
+
+  connection.query(sql, (error, rows) => {
+    if (error) {
+      response.send(error);
+      return;
+    }
+
+    const liquidacionObj = {};
+
+    rows.forEach((row) => {
+      const mes = row.mes;
+      const precio = row.precio;
+
+      if (!liquidacionObj[mes]) {
+        liquidacionObj[mes] = [];
+      }
+
+      liquidacionObj[mes].push(precio);
+    });
+
+    response.json(liquidacionObj);
+  });
+};*/
+
+/*
+{
+  metales: {
+    1: [metales],
+    2: [metales]
+    ....
+  }
+  valor {
+    1: [valores],
+    2: [valores]
+    ...
+  }
+}
+
+
+module.exports.grapliquidacion = (request, response) => {
+  const sql = `SELECT
+                MONTH(REPORTE.fecha) AS mes,
+                (PRECIO_CONCENTRADO.precio * tms) AS Cu
+              FROM 
+                reporte JOIN concentrado USING(idConcentrado)
+                JOIN precio_concentrado USING(idConcentrado)
+              WHERE
+                CONCENTRADO.nombre = 'Cu' 
+              GROUP BY 
+                MONTH(REPORTE.fecha)`;
+
+  connection.query(sql, (error, rowsCu) => {
+    if (error) {
+      response.send(error);
+      return;
+    }
+
+    const query = `SELECT
+                    MONTH(REPORTE.fecha) AS fecha,
+                    (PRECIO_CONCENTRADO.precio * tms) AS Zn,
+                    tms
+                  FROM 
+                    reporte JOIN concentrado USING(idConcentrado)
+                    JOIN precio_concentrado USING(idConcentrado)
+                  WHERE
+                    CONCENTRADO.nombre = 'Zn' 
+                  GROUP BY 
+                    MONTH(REPORTE.fecha)`;
+
+    connection.query(query, (error, rowsZn) => {
+      if (error) {
+        response.send(error);
+        return;
+      }
+
+      var combinedRows = [];
+
+      for (let i = 0; i < rowsCu.length; i++) {
+        var mes = rowsCu[i].mes;
+        var liquidacion = rowsCu[i].Cu + rowsZn[i].Zn;
+        var valor = liquidacion / rowsZn[i].tms;
+
+        combinedRows[i] = {
+          mes: mes,
+          valor: valor
+        };
+      }
+
+      // ENVÍO DE RESPUESTA HTTP
+      response.json(combinedRows);
+    });
+  });
+}*/
+
+module.exports.grapliquidacion = (request, response) => {
+  const sqlLiquidacion = `SELECT 
+                            precio,
+                            MONTH(fecha) AS mes,
+                            CONCENTRADO.nombre
+                          FROM 
+                            concentrado JOIN precio_concentrado USING(idConcentrado)
+                          GROUP BY
+                            mes,
+                            YEAR(fecha),
+                            CONCENTRADO.nombre`;
+
+  const sqlCu = `SELECT
+                    MONTH(REPORTE.fecha) AS mes,
+                    (PRECIO_CONCENTRADO.precio * tms) AS Cu,
+                    tms
+                  FROM 
+                    reporte JOIN concentrado USING(idConcentrado)
+                    JOIN precio_concentrado USING(idConcentrado)
+                  WHERE
+                    CONCENTRADO.nombre = 'Cu' 
+                  GROUP BY 
+                    mes`;
+
+  const sqlZn = `SELECT
+                    MONTH(REPORTE.fecha) AS mes,
+                    (PRECIO_CONCENTRADO.precio * tms) AS Zn,
+                    tms
+                  FROM 
+                    reporte JOIN concentrado USING(idConcentrado)
+                    JOIN precio_concentrado USING(idConcentrado)
+                  WHERE
+                    CONCENTRADO.nombre = 'Zn' 
+                  GROUP BY 
+                    mes`;
+
+  connection.query(sqlLiquidacion, (error, rowsLiquidacion) => {
+    if (error) {
+      response.send(error);
+      return;
+    }
+
+    connection.query(sqlCu, (error, rowsCu) => {
+      if (error) {
+        response.send(error);
+        return;
+      }
+
+      connection.query(sqlZn, (error, rowsZn) => {
+        if (error) {
+          response.send(error);
+          return;
+        }
+
+        const metalesObj = {};
+        const valorObj = {};
+
+        rowsLiquidacion.forEach((row) => {
+          const mes = row.mes;
+          const metal = row.nombre;
+          const precio = row.precio;
+
+          if (!metalesObj[mes]) {
+            metalesObj[mes] = [];
+          }
+
+          metalesObj[mes].push(precio);
+        });
+
+        rowsCu.forEach((row) => {
+          const mes = row.mes;
+          const valor = (row.Cu + row.Zn) / row.tms;
+
+          if (!valorObj[mes]) {
+            valorObj[mes] = [];
+          }
+
+          valorObj[mes].push(valor);
+        });
+
+        const result = {
+          metales: metalesObj,
+          valor: valorObj
+        };
+
+        // ENVÍO DE RESPUESTA HTTP
+        response.json(result);
+      });
+    });
+  });
+};
+
