@@ -3,6 +3,7 @@ const mysql = require ('mysql');
 const config = require('../helpers/config')
 const bcrypt = require("bcrypt");
 const jwt = require('jsonwebtoken');
+const { json } = require('body-parser');
 
 const saltRounds = 10;
 
@@ -145,13 +146,15 @@ module.exports.GenerateReport = (request, response ) => {
                 for (let i = 0; i < Object.keys(bod.Concentrados).length; i++) {
                     let concentrado = Object.keys(bod.Concentrados)[i] //Se guarda el concentrado que es
                     
+                    
                         //El segundo for con la funcion Object Keys lee los elementos por nombre y los convierte en id
-                        for (let j = 0; j < Object.keys(bod.Concentrados[concentrado]).length; j++) {
+                        for (let j = 1; j < Object.keys(bod.Concentrados[concentrado]).length; j++) {
                             let elemento = Object.keys(bod.Concentrados[concentrado])[j] //Guarda el elemento que es  
                             let porcentaje = bod.Concentrados[concentrado][elemento] //Guarda el porcentaje del elemento
+                            let tms = bod.Concentrados[concentrado]['tms']
                 
                             //El siguiente sql almacena los valores en la tabña por medio de id.
-                            var sql = `INSERT INTO REPORTE(idRep,idConcentrado, idElemento, idMina, TMS, gtonR, fecha,humedad) values (${bod.idRep},(SELECT idConcentrado FROM Concentrado where nombre = '${concentrado}'),(SELECT idElemento FROM Elemento where nombre = '${elemento}'),${bod.idMina},${bod.tms},${porcentaje},'${bod.fecha}',${bod.humedad});`
+                            var sql = `INSERT INTO REPORTE(idRep,idConcentrado, idElemento, idMina, TMS, gtonR, fecha,humedad) values (${bod.idRep},(SELECT idConcentrado FROM Concentrado where nombre = '${concentrado}'),(SELECT idElemento FROM Elemento where nombre = '${elemento}'),${bod.idMina},${tms},${porcentaje},'${bod.fecha}',${bod.humedad});`
                 
                             connection.query(sql, (error, rows) =>{
                                 if (error){
@@ -194,12 +197,14 @@ module.exports.GenerateReport = (request, response ) => {
     }
 }
 module.exports.Acumulado = (request,response) =>{
-    console.log(request.params.fecha)
     var concentradoZn = 0
     var concentradoCu = 0
-    var sqlZnHoy = `SELECT precio,fecha FROM Precio_Concentrado WHERE fecha = '${request.params.fecha}'`
-    var sqlZn = `SELECT SUM(precio) AS total_precios_Zn FROM Precio_Concentrado NATURAL JOIN Concentrado WHERE fecha <= DATE_ADD('${request.params.fecha}' , INTERVAL 1 DAY) and Concentrado.nombre = 'Zn';`
-    var sqlCu = `SELECT SUM(precio) AS total_precios_Cu FROM Precio_Concentrado NATURAL JOIN Concentrado WHERE fecha <= DATE_ADD('${request.params.fecha}' , INTERVAL 1 DAY) and Concentrado.nombre = 'Cu';`
+    var concentradoZnHoy = 0
+    var concentradoCuHoy = 0
+    var sqlZnHoy = `SELECT precio, fecha, nombre FROM Precio_Concentrado NATURAL JOIN Concentrado WHERE fecha <= '${request.params.fecha} 23:59:59' AND fecha >= '${request.params.fecha} 00:00:00' AND nombre = 'Zn' ORDER BY fecha DESC LIMIT 1; `
+    var sqlCuHoy = `SELECT precio, fecha, nombre FROM Precio_Concentrado NATURAL JOIN Concentrado WHERE fecha <= '${request.params.fecha} 23:59:59' AND fecha >= '${request.params.fecha} 00:00:00' AND nombre = 'Cu' ORDER BY fecha DESC LIMIT 1; `
+    var sqlZn = `SELECT SUM(precio) AS total_precios_Zn FROM Precio_Concentrado NATURAL JOIN Concentrado WHERE fecha <= DATE_ADD('${request.params.fecha}' , INTERVAL 1 DAY) and fecha >= DATE_FORMAT('${request.params.fecha}', '%Y-%m-01')  and Concentrado.nombre = 'Zn';`
+    var sqlCu = `SELECT SUM(precio) AS total_precios_Cu FROM Precio_Concentrado NATURAL JOIN Concentrado WHERE fecha <= DATE_ADD('${request.params.fecha}' , INTERVAL 1 DAY) and fecha >= DATE_FORMAT('${request.params.fecha}', '%Y-%m-01') and Concentrado.nombre = 'Cu';`
     
     connection.query(sqlZn, (error, rows) => {
         if (error) {
@@ -211,24 +216,40 @@ module.exports.Acumulado = (request,response) =>{
                     response.send(error);
                 } else {
                     concentradoCu = rows[0].total_precios_Cu;
-                    let obj = {
-                        AcumuladoZn: concentradoZn,
-                        AcumuladoCu: concentradoCu
-                    };
-                    return response.json(obj);
+                    connection.query(sqlZnHoy, (error, rows) => {
+                        if (error) {
+                            response.send(error);
+                        } else {
+                            concentradoZnHoy = rows[0].precio
+                            connection.query(sqlCuHoy, (error, rows) => {
+                                if (error) {
+                                    response.send(error);
+                                } else {
+                                    concentradoCuHoy = rows[0].precio
+                                    let obj = {
+                                        HoyZn: concentradoZnHoy,
+                                        HoyCu: concentradoCuHoy,
+                                        AcumuladoZn: concentradoZn,
+                                        AcumuladoCu: concentradoCu
+                                    }
+                                    return response.status(200).json(obj)
+
+                                }
+                            });
+                        }
+                    });
+
                 }
             });
         }
-    });    
+    });  
 
 }
-
 
 module.exports.EditPrecios = (request, response) =>{
     var bod = request.body
     let now = new Date()
-    let fechaSQL = now.toISOString().slice(0, 10);
-
+    let fechaSQL = now.toISOString().slice(0, 19).replace('T', ' ');
 
     var sql = `INSERT INTO Precio_Elemento(idElemento,precio,fecha) values((SELECT idElemento FROM Elemento where nombre = '${bod.elemento}'),${bod.precio}, '${fechaSQL}')`
 
@@ -241,4 +262,68 @@ module.exports.EditPrecios = (request, response) =>{
         }
     })
 
+}
+
+module.exports.ValoresElemAct = (request,response) => {
+    var sql = `SELECT idElemento FROM Elemento`
+    connection.query(sql, async (error, rows) =>{
+        if (error){
+            response.send(error)
+        }else{
+            let ids = []
+            for (let i = 0; i < rows.length; i++) {
+                ids.push(rows[i].idElemento)
+            }
+            
+            const objetoFinal = {};
+            for (let j = 1; j <= ids.length; j++) {
+                var sql2 = `SELECT nombre,precio from Precio_Elemento natural Join Elemento where idElemento = ${j} ORDER BY fecha DESC LIMIT 1;`
+                const rows = await new Promise((resolve, reject) => {
+                    connection.query(sql2, (error, rows) => {
+                      if (error) {
+                        reject(error);
+                      } else {
+                        resolve(rows);
+                      }
+                    });
+                });
+                console.log(rows);
+                objetoFinal[`${rows[0].nombre}`] = rows[0].precio;
+                
+            }
+            return response.status(200).json(objetoFinal)
+        }
+    })
+}
+
+module.exports.ValoresElemHist = (request,response) => {
+    var sql = `SELECT idElemento FROM Elemento`
+    connection.query(sql, async (error, rows) =>{
+        if (error){
+            response.send(error)
+        }else{
+            let ids = []
+            for (let i = 0; i < rows.length; i++) {
+                ids.push(rows[i].idElemento)
+            }
+            
+            const objetoFinal = {};
+            for (let j = 1; j <= ids.length; j++) {
+                var sql2 = `SELECT nombre,precio from Precio_Elemento natural Join Elemento where idElemento = ${j} and fecha fecha <= '${request.params.fecha} 23:59:59' ORDER BY fecha DESC LIMIT 1;`
+                const rows = await new Promise((resolve, reject) => {
+                    connection.query(sql2, (error, rows) => {
+                      if (error) {
+                        reject(error);
+                      } else {
+                        resolve(rows);
+                      }
+                    });
+                });
+                console.log(rows);
+                objetoFinal[`${rows[0].nombre}`] = rows[0].precio;
+                
+            }
+            return response.status(200).json(objetoFinal)
+        }
+    })
 }
