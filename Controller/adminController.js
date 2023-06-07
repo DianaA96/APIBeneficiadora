@@ -67,7 +67,7 @@ module.exports.UPDATE = (request, response) => {
 
 module.exports.List = (request, response) =>{
 
-    var sql = 'SELECT idUsuario,nombre,apellidoP,apellidoM,ultimaConexion,telfono,email,idRol FROM Usuario WHERE isDeleted = false '
+    var sql = 'SELECT idUsuario,nombre,apellidoP,apellidoM,ultimaConexion,telefono,email,idRol FROM Usuario WHERE isDeleted = false '
     connection.query(sql, (error, rows) =>{
         if (error) 
             response.send(error)
@@ -77,7 +77,7 @@ module.exports.List = (request, response) =>{
 
 module.exports.GetForEdit = (request, response) =>{
 
-    var sql = `SELECT idUsuario,nombre,apellidoP,apellidoM,telfono,email,idRol FROM Usuario WHERE isDeleted = false  and idUsuario = ${request.params.id}`
+    var sql = `SELECT idUsuario,nombre,apellidoP,apellidoM,telefono,email,idRol FROM Usuario WHERE isDeleted = false  and idUsuario = ${request.params.id}`
     connection.query(sql, (error, rows) =>{
         if (error) 
             response.send(error)
@@ -86,7 +86,7 @@ module.exports.GetForEdit = (request, response) =>{
 }
 
 module.exports.READG = (request, response ) => {
-    var sql = 'SELECT idUsuario,nombre,apellidoP,apellidoM,ultimaConexion,telfono,email,idRol FROM Usuario WHERE idUsuario = ? AND isDeleted = false'
+    var sql = 'SELECT idUsuario,nombre,apellidoP,apellidoM,ultimaConexion,telefono,email,idRol FROM Usuario WHERE idUsuario = ? AND isDeleted = false'
     connection.query(sql,[request.params.id], (error, results, fields) => {
         if (error) 
             response.send(error)
@@ -193,11 +193,11 @@ module.exports.GenerateReport = (request, response ) => {
         })
     }
 }
-
 module.exports.Acumulado = (request,response) =>{
     console.log(request.params.fecha)
     var concentradoZn = 0
     var concentradoCu = 0
+    var sqlZnHoy = `SELECT precio,fecha FROM Precio_Concentrado WHERE fecha = '${request.params.fecha}'`
     var sqlZn = `SELECT SUM(precio) AS total_precios_Zn FROM Precio_Concentrado NATURAL JOIN Concentrado WHERE fecha <= DATE_ADD('${request.params.fecha}' , INTERVAL 1 DAY) and Concentrado.nombre = 'Zn';`
     var sqlCu = `SELECT SUM(precio) AS total_precios_Cu FROM Precio_Concentrado NATURAL JOIN Concentrado WHERE fecha <= DATE_ADD('${request.params.fecha}' , INTERVAL 1 DAY) and Concentrado.nombre = 'Cu';`
     

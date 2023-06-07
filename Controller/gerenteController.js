@@ -16,13 +16,15 @@ module.exports.reporteBascula = (req, res) => {
 
   const consulta1 = `select 
   sum(acarreo-(trituradasP1+trituradasP2)) as inicial,
-  sum(trituradasP1+trituradasP2) as molidasAcum
+  sum(trituradasP1+trituradasP2) as molidasAcum, r.humedad
   from movimiento_mineral mv
   join mina m on m.idMina=mv.idMina
+  join reporte r on mv.idMina=r.idMina
+  join reporte re on mv.fecha=re.fecha
   where m.nombre='${nombreMina}' and
-  '${fecha}'<= fecha and
-  month(fecha) = month('${fecha}') and
-  year(fecha) = year('${fecha}');`;
+  '${fecha}'<= mv.fecha and
+  month(mv.fecha) = month('${fecha}') and
+  year(mv.fecha) = year('${fecha}')`;
 
   const consulta2 = `SELECT 
     SUM(acarreo) AS mensual

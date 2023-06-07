@@ -32,7 +32,7 @@ module.exports.LOGIN  =  async(request, response) =>{
                         nombre: results[0].nombre,
                         apellidoP: results[0].apellidoP,
                         apellidoM: results[0].apellidoM,
-                        telfono: results[0].telfono,
+                        telefono: results[0].telefono,
                         email: results[0].email,
                         idRole: results[0].idRol
                     }
