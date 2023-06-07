@@ -317,7 +317,7 @@ module.exports.movMineralTable = (request, response) => {
 
     const combinedRows = [];
 
-    let completedQueries = 0; // Contador para realizar un seguimiento de las consultas completadas
+    let completedQueries = 0; // CONTADOR
 
     for (let i = 0; i < rows.length; i++) {
       const acarreo = rows[i].acarreo;
@@ -352,7 +352,7 @@ module.exports.movMineralTable = (request, response) => {
 
         completedQueries++;
 
-        // Verificar si todas las consultas se han completado
+        // VERIFICA SI SE HA COMPLETADO
         if (completedQueries === rows.length) {
           // ENVÍO DE RESPUESTA HTTP
           response.json(combinedRows);
@@ -362,23 +362,66 @@ module.exports.movMineralTable = (request, response) => {
   });
 };
 
-
-/*
-module.exports.movMineralTable = (request, response) =>{
+module.exports.reporteTable = (request, response) => {
   const sql = `SELECT
-                idMovimiento, 
-                SUM(acarreo) AS acarreo,
-                SUM(trituradasP1 + trituradasP2) AS trituradas,
-                SUM(acarreo-(trituradasP1+trituradasP2)) as patios,
-                fecha
+                idReporte, 
+                REPORTE.fecha AS fecha,
+                (PRECIO_CONCENTRADO.precio * tms) AS Cu
               FROM 
-                movimiento_mineral
+                reporte JOIN concentrado USING(idConcentrado)
+                JOIN precio_concentrado USING(idConcentrado)
+              WHERE
+                CONCENTRADO.nombre = 'Cu' 
               GROUP BY 
-                fecha`;
+                REPORTE.fecha`;
 
-  connection.query(sql, (error, rows) =>{
-      if (error) 
-          response.send(error)
-      response.json(rows)
-  })
-}*/
+  connection.query(sql, (error, rowsCu) => {
+    if (error) {
+      response.send(error);
+      return;
+    }
+
+    const query = `SELECT
+                    idReporte, 
+                    REPORTE.fecha AS fecha,
+                    (PRECIO_CONCENTRADO.precio * tms) AS Zn,
+                    tms
+                  FROM 
+                    reporte JOIN concentrado USING(idConcentrado)
+                    JOIN precio_concentrado USING(idConcentrado)
+                  WHERE
+                    CONCENTRADO.nombre = 'Zn' 
+                  GROUP BY 
+                    REPORTE.fecha`;
+
+    connection.query(query, (error, rowsZn) => {
+      if (error) {
+        response.send(error);
+        return;
+      }
+
+      var combinedRows = [];
+
+      for (let i = 0; i < rowsCu.length; i++) {
+        var idReporte = rowsCu[i].idReporte;
+        var fecha = rowsZn[i].fecha;
+        var cu = rowsCu[i].Cu;
+        var zn = rowsZn[i].Zn;
+        var liquidacion = rowsCu[i].Cu + rowsZn[i].Zn;
+        var valor = liquidacion / rowsZn[i].tms;
+
+        combinedRows[i] = {
+          idReporte: idReporte,
+          fecha: fecha,
+          cu: cu,
+          zn: zn,
+          liquidacion: liquidacion,
+          valor: valor
+        };
+      }
+
+      // ENVÍO DE RESPUESTA HTTP
+      response.json(combinedRows);
+    });
+  });
+}
