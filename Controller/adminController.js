@@ -277,7 +277,7 @@ module.exports.ValoresElemAct = (request,response) => {
             
             const objetoFinal = {};
             for (let j = 1; j <= ids.length; j++) {
-                var sql2 = `SELECT nombre,precio from Precio_Elemento natural Join Elemento where idElemento = ${j} ORDER BY fecha DESC LIMIT 1;`
+                var sql2 = `SELECT nombre,precio from Precio_Elemento natural Join Elemento where idElemento = ${j} ORDER BY fecha DESC LIMIT 2;`
                 const rows = await new Promise((resolve, reject) => {
                     connection.query(sql2, (error, rows) => {
                       if (error) {
@@ -287,8 +287,11 @@ module.exports.ValoresElemAct = (request,response) => {
                       }
                     });
                 });
-                console.log(rows);
-                objetoFinal[`${rows[0].nombre}`] = rows[0].precio;
+               
+                objetoFinal[`${rows[0].nombre}`] = {
+                    valorActual: rows[0].precio,
+                    valorAnterior:rows[1].precio
+                };
                 
             }
             return response.status(200).json(objetoFinal)
