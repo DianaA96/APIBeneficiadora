@@ -411,7 +411,7 @@ module.exports.reporteTable = (request, response) => {
         var valor = liquidacion / rowsZn[i].tms;
 
         combinedRows[i] = {
-          idReporte: idReporte,
+          id: idReporte,
           fecha: fecha,
           cu: cu,
           zn: zn,
