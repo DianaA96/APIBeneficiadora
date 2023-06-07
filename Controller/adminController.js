@@ -4,6 +4,7 @@ const config = require('../helpers/config')
 const bcrypt = require("bcrypt");
 const jwt = require('jsonwebtoken');
 const { json } = require('body-parser');
+const { or } = require('sequelize');
 
 const saltRounds = 10;
 
@@ -265,14 +266,16 @@ module.exports.EditPrecios = (request, response) =>{
 }
 
 module.exports.ValoresElemAct = (request,response) => {
-    var sql = `SELECT idElemento FROM Elemento`
+    var sql = `SELECT idElemento,nombre FROM Elemento`
     connection.query(sql, async (error, rows) =>{
         if (error){
             response.send(error)
         }else{
             let ids = []
+            let nombres = []
             for (let i = 0; i < rows.length; i++) {
                 ids.push(rows[i].idElemento)
+                nombres.push(rows[i].nombre)
             }
             
             const objetoFinal = {};
@@ -287,11 +290,18 @@ module.exports.ValoresElemAct = (request,response) => {
                       }
                     });
                 });
-               
-                objetoFinal[`${rows[0].nombre}`] = {
-                    valorActual: rows[0].precio,
-                    valorAnterior:rows[1].precio
-                };
+               if (rows[0] == undefined || rows[1] == undefined) {
+                    objetoFinal[`${nombres[j]}`] = {
+                        valorActual: 0,
+                        valorAnterior:0
+                    };
+               }else{
+                    objetoFinal[`${rows[0].nombre}`] = {
+                        valorActual: rows[0].precio,
+                        valorAnterior:rows[1].precio
+                    };
+               }
+                
                 
             }
             return response.status(200).json(objetoFinal)
