@@ -428,29 +428,52 @@ module.exports.reporteTable = (request, response) => {
 
 module.exports.liquidacion = (request, response) => {
   const cu = `SELECT
-                idReporte, 
-                REPORTE.fecha AS fecha,
-                (PRECIO_CONCENTRADO.precio * tms) AS Cu
+                PRECIO_CONCENTRADO.precio AS Cu,
+                REPORTE.idReporte,
+                REPORTE.fecha
               FROM 
                 reporte JOIN concentrado USING(idConcentrado)
                 JOIN precio_concentrado USING(idConcentrado)
               WHERE
                 CONCENTRADO.nombre = 'Cu' 
+                AND PRECIO_CONCENTRADO.fecha = '${request.query.fecha}' 
+                AND idMina = '${request.query.idMina}'
               GROUP BY 
                 REPORTE.fecha`;
 
   const zn = `SELECT
-                idReporte, 
-                REPORTE.fecha AS fecha,
-                (PRECIO_CONCENTRADO.precio * tms) AS Zn,
+                PRECIO_CONCENTRADO.precio AS Zn,
                 tms
               FROM 
                 reporte JOIN concentrado USING(idConcentrado)
                 JOIN precio_concentrado USING(idConcentrado)
               WHERE
                 CONCENTRADO.nombre = 'Zn' 
+                AND PRECIO_CONCENTRADO.fecha = '${request.query.fecha}' 
+                AND idMina = '${request.query.idMina}'
               GROUP BY 
                 REPORTE.fecha`;
+  
+  const acumuladoCu = `SELECT 
+                          SUM(PRECIO_CONCENTRADO.precio) AS 'totalCu'
+                      FROM concentrado JOIN precio_concentrado USING(idConcentrado)
+                      WHERE 
+                        CONCENTRADO.nombre = 'Cu' 
+                        AND MONTH(PRECIO_CONCENTRADO.fecha) = MONTH('${request.query.fecha}') 
+                        AND YEAR(PRECIO_CONCENTRADO.fecha) = YEAR('${request.query.fecha}')`;
+  
+  const acumuladoZn = `SELECT 
+                        SUM(PRECIO_CONCENTRADO.precio) AS 'totalZn'
+                      FROM concentrado JOIN precio_concentrado USING(idConcentrado)
+                      WHERE 
+                        CONCENTRADO.nombre = 'Zn' 
+                        AND MONTH(PRECIO_CONCENTRADO.fecha) = MONTH('${request.query.fecha}') 
+                        AND YEAR(PRECIO_CONCENTRADO.fecha) = YEAR('${request.query.fecha}')`;
+          
+  const acumuladoTMS = `SELECT
+                        SUM(tms) AS 'totalTMS'
+                      FROM reporte
+                      WHERE MONTH(fecha) = MONTH('${request.query.fecha}')`;
         
   connection.query(cu, (error, rowsCu) => {
     if (error) {
@@ -464,31 +487,58 @@ module.exports.liquidacion = (request, response) => {
         return;
       }
 
-      var combinedRows = [];
+      connection.query(acumuladoCu, (error, rowsAcumuladoCu) => {
+        if (error) {
+          response.send(error);
+          return;
+        }
 
-      for (let i = 0; i < rowsCu.length; i++) {
-        var idReporte = rowsCu[i].idReporte;
-        var fecha = rowsZn[i].fecha;
-        var cu = rowsCu[i].Cu;
-        var zn = rowsZn[i].Zn;
-        var liquidacion = rowsCu[i].Cu + rowsZn[i].Zn;
-        var valor = liquidacion / rowsZn[i].tms;
+        connection.query(acumuladoZn, (error, rowsAcumuladoZn) => {
+          if (error) {
+            response.send(error);
+            return;
+          }
 
-        combinedRows[i] = {
-          idReporte: idReporte,
-          fecha: fecha,
-          cu: cu,
-          zn: zn,
-          liquidacionHoy: liquidacion,
-          valor: valor
-        };
-      }
+          connection.query(acumuladoTMS, (error, rowsAcumuladoTMS) => {
+            if (error) {
+              response.send(error);
+              return;
+            }
 
-      // ENVÍO DE RESPUESTA HTTP
-      response.json(combinedRows);
+            var combinedRows = [];
+
+            for (let i = 0; i < rowsCu.length; i++) {
+              var idReporte = rowsCu[i].idReporte;
+              var fecha = rowsCu[i].fecha;
+              var cu = rowsCu[i].Cu;
+              var zn = rowsZn[i].Zn;
+              var acumuladoCu = rowsAcumuladoCu[0].totalCu;
+              var acumuladoZn = rowsAcumuladoZn[0].totalZn;
+              var liquidacionAcumulada = acumuladoCu + acumuladoZn;
+              var valorAcumulado = liquidacionAcumulada / rowsAcumuladoTMS[i].totalTMS;
+              var liquidacion = cu + zn;
+              var valor = liquidacion / rowsZn[i].tms;
+
+              combinedRows[i] = {
+                cu: cu,
+                zn: zn,
+                acumuladoCu: acumuladoCu,
+                acumuladoZn: acumuladoZn,
+                totalAcumulado: liquidacionAcumulada,
+                totalHoy: liquidacion,
+                valorHoy: valor,
+                valorAcumulado: valorAcumulado
+              };
+            }
+
+            // ENVÍO DE RESPUESTA HTTP
+            response.json(combinedRows);
+          });
+        });
+      });
     });
   });
-}
+};
 
 module.exports.grapliquidacion = (request, response) => {
   const sqlLiquidacion = `SELECT 
