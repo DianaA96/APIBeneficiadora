@@ -139,7 +139,7 @@ module.exports.GenerateReport = (request, response ) => {
     let fechaSQL = now.toISOString().slice(0, 19).replace('T', ' ');
     try{
         var sqlCheck = `Select (idRep) from REPORTE Where fecha = '${bod.fecha}' and idMina = ${bod.idMina}`
-        connection.query(sqlCheck, async(error, results, fields) => {
+        connection.query(sqlCheck, (error, results, fields) => {
             if (error) 
                 response.send(error)
             if (results == "") {
@@ -155,11 +155,13 @@ module.exports.GenerateReport = (request, response ) => {
                             let tms = bod.Concentrados[concentrado]['tms']
                 
                             //El siguiente sql almacena los valores en la tabña por medio de id.
-                            var sql = `INSERT INTO REPORTE(idRep,idConcentrado, idElemento, idMina, TMS, gtonR, fecha,humedad) values (${bod.idRep},(SELECT idConcentrado FROM Concentrado where nombre = '${concentrado}'),(SELECT idElemento FROM Elemento where nombre = '${elemento}'),${bod.idMina},${tms},${porcentaje},'${bod.fecha}',${bod.humedad});`
+                            var sql = `INSERT INTO REPORTE(idConcentrado, idElemento, idMina, TMS, gtonR, fecha,humedad, idRep) values ((SELECT idConcentrado FROM Concentrado where nombre = '${concentrado}'),(SELECT idElemento FROM Elemento where nombre = '${elemento}'),${bod.idMina},${tms},${porcentaje},'${bod.fecha}',${bod.humedad},'${bod.idRep}');`
                 
                             connection.query(sql, (error, rows) =>{
                                 if (error){
                                     response.send(error)
+                                }else{
+                                    console.log(bod)
                                 }
                             })
                                     
@@ -322,7 +324,7 @@ module.exports.ValoresElemHist = (request,response) => {
             
             const objetoFinal = {};
             for (let j = 1; j <= ids.length; j++) {
-                var sql2 = `SELECT nombre,precio from Precio_Elemento natural Join Elemento where idElemento = ${j} and fecha fecha <= '${request.params.fecha} 23:59:59' ORDER BY fecha DESC LIMIT 1;`
+                var sql2 = `SELECT nombre,precio from Precio_Elemento natural Join Elemento where idElemento = ${j} and fecha <= '${request.params.fecha} 23:59:59' ORDER BY fecha DESC LIMIT 1;`
                 const rows = await new Promise((resolve, reject) => {
                     connection.query(sql2, (error, rows) => {
                       if (error) {
@@ -340,3 +342,74 @@ module.exports.ValoresElemHist = (request,response) => {
         }
     })
 }
+
+module.exports.SumaElementos = async (request, response) => {
+    try {
+      let idsC = [];
+      let nombresC = [];
+      let idsE = [];
+      let nombresE = [];
+      
+      const sql = `SELECT idConcentrado, nombre FROM Concentrado`;
+      
+      const rows = await new Promise((resolve, reject) => {
+        connection.query(sql, (error, rows) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(rows);
+          }
+        });
+      });
+      
+      for (let i = 0; i < rows.length; i++) {
+        idsC.push(rows[i].idConcentrado);
+        nombresC.push(rows[i].nombre);
+      }
+      const sql2 = `SELECT idElemento, nombre FROM Elemento`;
+      const rows2 = await new Promise((resolve, reject) => {
+        connection.query(sql2, (error, rows) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(rows);
+          }
+        });
+      });
+
+      for (let j = 0; j < rows2.length; j++) {
+        idsE.push(rows2[j].idElemento);
+        nombresE.push(rows2[j].nombre);
+      }
+      const objetoFinal = {};
+      for (let x = 0; x < idsC.length; x++) {
+        let objElementos = {};
+        for (let y = 0; y < idsE.length; y++) {
+            var sql3 = `SELECT sum(gtonR) as suma, nombre from REPORTE natural join Elemento where idConcentrado = ${idsC[x]} and idElemento = ${idsE[y]} and fecha <= DATE_FORMAT('${request.params.fecha}', '%Y-%m-01')`
+            const rows3 = await new Promise((resolve, reject) => {
+                connection.query(sql3, (error, rows) => {
+                  if (error) {
+                    reject(error);
+                  } else {
+                    resolve(rows);
+                  }
+                });
+            });
+            objElementos[`${rows3[0].nombre}`] = rows3[0].suma;
+            
+        }
+        console.log(objElementos)
+        objetoFinal[`${nombresC[x]}`] = objElementos
+       
+      }
+
+
+      return response.status(200).json(objetoFinal)
+
+      // Resto de tu código...
+      
+    } catch (error) {
+      response.send(error);
+    }
+  };
+  

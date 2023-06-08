@@ -11,34 +11,59 @@ connection.connect(error => {
 module.exports.reporteBascula = (req, res) => {
   const fecha = req.query.fecha.replace(/'/g, '');
   const nombreMina = req.query.nombreMina.replace(/'/g, '');
-  console.log(fecha)
-  console.log(nombreMina)
 
-  const consulta1 = `select 
-  sum(acarreo-(trituradasP1+trituradasP2)) as inicial,
-  sum(trituradasP1+trituradasP2) as molidasAcum, r.humedad
-  from movimiento_mineral mv
-  join mina m on m.idMina=mv.idMina
-  join reporte r on mv.idMina=r.idMina
-  join reporte re on mv.fecha=re.fecha
-  where m.nombre='${nombreMina}' and
-  '${fecha}'<= mv.fecha and
-  month(mv.fecha) = month('${fecha}') and
-  year(mv.fecha) = year('${fecha}')`;
+  const consulta1 = `SELECT 
+    SUM(acarreo - (trituradasP1 + trituradasP2)) AS inicial,
+    SUM(trituradasP1 + trituradasP2) AS molidasAcum
+    FROM movimiento_mineral mv
+    JOIN mina m ON m.idMina = mv.idMina
+    WHERE DATE_SUB('${fecha}', INTERVAL 1 DAY) <= fecha
+    AND m.nombre = '${nombreMina}'
+    AND MONTH(mv.fecha) = MONTH('${fecha}')
+    AND YEAR(mv.fecha) = YEAR('${fecha}')`;
 
   const consulta2 = `SELECT 
     SUM(acarreo) AS mensual
     FROM movimiento_mineral mv
     JOIN mina m ON m.idMina = mv.idMina
-    WHERE m.nombre = '${nombreMina}' AND MONTH(fecha) = MONTH('${fecha}') and
-    year(fecha) = year('${fecha}')`;
+    WHERE m.nombre = '${nombreMina}'
+    AND MONTH(fecha) = MONTH('${fecha}')
+    AND YEAR(fecha) = YEAR('${fecha}')`;
 
   const consulta3 = `SELECT 
     SUM(acarreo) AS acarreoHoy,
-    (trituradasP1 + trituradasP2) AS trituradasHoy
+    SUM(trituradasP1 + trituradasP2) AS trituradasHoy
     FROM movimiento_mineral mv
     JOIN mina m ON m.idMina = mv.idMina
-    WHERE m.nombre = '${nombreMina}' AND DATE(fecha) = '${fecha}'`;
+    WHERE m.nombre = '${nombreMina}'
+    AND fecha = '${fecha}'`;
+
+  const consulta4 = `SELECT 
+    SUM(acarreo - (trituradasP1 + trituradasP2)) AS inicial2
+    FROM movimiento_mineral mv
+    JOIN mina m ON m.idMina = mv.idMina
+    WHERE DATE_SUB('${fecha}', INTERVAL 1 DAY) <= fecha
+    AND m.nombre = '${nombreMina}'
+    AND MONTH(mv.fecha) = MONTH('${fecha}')
+    AND YEAR(mv.fecha) = YEAR('${fecha}')`;
+
+  const consulta5 = `SELECT 
+    SUM(acarreo) AS acarreoALaFecha,
+    SUM(trituradasP1 + trituradasP2) AS molidasALaFecha
+    FROM movimiento_mineral mv
+    JOIN mina m ON m.idMina = mv.idMina
+    WHERE m.nombre = '${nombreMina}'
+    AND '${fecha}' <= mv.fecha
+    AND MONTH(mv.fecha) = MONTH('${fecha}')
+    AND YEAR(mv.fecha) = YEAR('${fecha}')`;
+
+  const consulta6 = `SELECT 
+    acarreo,
+    (trituradasP1 + trituradasP2) AS trituradas
+    FROM movimiento_mineral mv
+    JOIN mina m ON m.idMina = mv.idMina
+    WHERE m.nombre = '${nombreMina}'
+    AND fecha = '${fecha}'`;
 
   const resultado = {};
 
@@ -66,11 +91,39 @@ module.exports.reporteBascula = (req, res) => {
           resultado.hoy = results3[0];
         }
 
-        res.json(resultado);
+        connection.query(consulta4, (error, results4) => {
+          if (error) {
+            console.error('Error en la consulta 4:', error);
+            resultado.inicial2 = { error: 'Ocurrió un error en la consulta 4' };
+          } else {
+            resultado.inicial2 = results4[0];
+          }
+
+          connection.query(consulta5, (error, results5) => {
+            if (error) {
+              console.error('Error en la consulta 5:', error);
+              resultado.acarreoALaFecha = { error: 'Ocurrió un error en la consulta 5' };
+            } else {
+              resultado.acarreoALaFecha = results5[0];
+            }
+
+            connection.query(consulta6, (error, results6) => {
+              if (error) {
+                console.error('Error en la consulta 6:', error);
+                resultado.trituradas = { error: 'Ocurrió un error en la consulta 6' };
+              } else {
+                resultado.trituradas = results6[0];
+              }
+
+              res.json(resultado);
+            });
+          });
+        });
       });
     });
   });
 };
+
 
 module.exports.balance = (request, response) => {
   var sql = `SELECT 

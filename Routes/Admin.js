@@ -14,5 +14,6 @@ router.get('/getEdit/:id', controller.GetForEdit)
 router.get('/acumulados/:fecha', controller.Acumulado)
 router.get('/Elementos/Actuales', controller.ValoresElemAct)
 router.get('/Elementos/Historial/:fecha', controller.ValoresElemAct)
+router.get('/sumaElementos/:fecha', controller.SumaElementos)
 
 module.exports = router
