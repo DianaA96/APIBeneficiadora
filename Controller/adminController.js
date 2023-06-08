@@ -204,36 +204,61 @@ module.exports.Acumulado = (request,response) =>{
     var concentradoCu = 0
     var concentradoZnHoy = 0
     var concentradoCuHoy = 0
-    var sqlZnHoy = `SELECT precio, fecha, nombre FROM Precio_Concentrado NATURAL JOIN Concentrado WHERE fecha <= '${request.params.fecha} 23:59:59' AND fecha >= '${request.params.fecha} 00:00:00' AND nombre = 'Zn' ORDER BY fecha DESC LIMIT 1; `
+    var sqlZnHoy = `SELECT precio, fecha, nombre FROM Precio_Concentrado NATURAL JOIN Concentrado WHERE fecha <= '${request.params.fecha} 23:59:59' AND fecha >= '${request.params.fecha} 00:00:00' AND nombre = 'Pb' ORDER BY fecha DESC LIMIT 1; `
     var sqlCuHoy = `SELECT precio, fecha, nombre FROM Precio_Concentrado NATURAL JOIN Concentrado WHERE fecha <= '${request.params.fecha} 23:59:59' AND fecha >= '${request.params.fecha} 00:00:00' AND nombre = 'Cu' ORDER BY fecha DESC LIMIT 1; `
     var sqlZn = `SELECT SUM(precio) AS total_precios_Zn FROM Precio_Concentrado NATURAL JOIN Concentrado WHERE fecha <= DATE_ADD('${request.params.fecha}' , INTERVAL 1 DAY) and fecha >= DATE_FORMAT('${request.params.fecha}', '%Y-%m-01')  and Concentrado.nombre = 'Zn';`
-    var sqlCu = `SELECT SUM(precio) AS total_precios_Cu FROM Precio_Concentrado NATURAL JOIN Concentrado WHERE fecha <= DATE_ADD('${request.params.fecha}' , INTERVAL 1 DAY) and fecha >= DATE_FORMAT('${request.params.fecha}', '%Y-%m-01') and Concentrado.nombre = 'Cu';`
+    var sqlCu = `SELECT SUM(precio) AS total_precios_Cu FROM Precio_Concentrado NATURAL JOIN Concentrado WHERE fecha <= DATE_ADD('${request.params.fecha}' , INTERVAL 1 DAY) and fecha >= DATE_FORMAT('${request.params.fecha}', '%Y-%m-01') and Concentrado.nombre = 'Pb';`
     
     connection.query(sqlZn, (error, rows) => {
         if (error) {
             response.send(error);
         } else {
-            concentradoZn = rows[0].total_precios_Zn;
+            
+            if (rows[0].total_precios_Zn == null) {
+                concentradoZn = 0
+            } else {
+                concentradoZn = rows[0].total_precios_Zn;
+            }
+            
             connection.query(sqlCu, (error, rows) => {
                 if (error) {
                     response.send(error);
                 } else {
-                    concentradoCu = rows[0].total_precios_Cu;
+                    if (rows[0].total_precios_Cu == null) {
+                        concentradoCu = 0
+                    } else {
+                        concentradoCu = rows[0].total_precios_Cu;
+                    }
+                    
+                    
                     connection.query(sqlZnHoy, (error, rows) => {
+                        
                         if (error) {
                             response.send(error);
                         } else {
-                            concentradoZnHoy = rows[0].precio
+                            
+                            if (rows.length == 0) {
+                                concentradoZnHoy = 0
+                            } else {
+                                concentradoZnHoy = rows[0].precio
+                              
+                            }
+                            
                             connection.query(sqlCuHoy, (error, rows) => {
                                 if (error) {
                                     response.send(error);
                                 } else {
-                                    concentradoCuHoy = rows[0].precio
+                                    if (rows.length == 0) {
+                                        concentradoCuHoy = 0
+                                    } else {
+                                        concentradoCuHoy = rows[0].precio
+                                    }
+                                    
                                     let obj = {
                                         HoyZn: concentradoZnHoy,
                                         HoyCu: concentradoCuHoy,
                                         AcumuladoZn: concentradoZn,
-                                        AcumuladoCu: concentradoCu
+                                        AcumuladoPb: concentradoCu
                                     }
                                     return response.status(200).json(obj)
 
