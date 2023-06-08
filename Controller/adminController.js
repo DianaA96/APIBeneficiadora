@@ -385,6 +385,9 @@ module.exports.SumaElementos = async (request, response) => {
       for (let x = 0; x < idsC.length; x++) {
         let objElementos = {};
         for (let y = 0; y < idsE.length; y++) {
+            if (nombresE[y] == 'Cd') {
+                break
+            }
             var sql3 = `SELECT sum(gtonR) as suma, nombre from REPORTE natural join Elemento where idConcentrado = ${idsC[x]} and idElemento = ${idsE[y]} and fecha <= DATE_FORMAT('${request.params.fecha}', '%Y-%m-01')`
             const rows3 = await new Promise((resolve, reject) => {
                 connection.query(sql3, (error, rows) => {
@@ -395,6 +398,7 @@ module.exports.SumaElementos = async (request, response) => {
                   }
                 });
             });
+            
             objElementos[`${rows3[0].nombre}`] = rows3[0].suma;
             
         }
