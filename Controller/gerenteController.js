@@ -125,8 +125,8 @@ module.exports.movMineral = (request, response) => {
   var query = `SELECT 
                   MINA.nombre,
                   SUM(acarreo) AS 'acarreo',
-                  SUM(trituradasP1) AS 'trituradas1',
-                  SUM(trituradasP2) AS 'trituradas2'
+                  SUM(trituradasP1 + trituradasP2) AS 'trituradas',
+                  SUM(acarreo-(trituradasP1+trituradasP2)) as patios
                 FROM 
                   mina 
                   JOIN movimiento_mineral USING(idMina)
@@ -134,6 +134,15 @@ module.exports.movMineral = (request, response) => {
                   MOVIMIENTO_MINERAL.fecha = '${request.query.fecha}'
                 GROUP BY 
                   idMina`;
+  
+  const inicial = `SELECT
+                    SUM(acarreo-(trituradasP1+trituradasP2)) as inicial
+                  FROM 
+                    movimiento_mineral
+                  WHERE 
+                    fecha = DATE_SUB('${request.query.fecha}', INTERVAL 1 DAY)
+                  GROUP BY 
+                    idMina`;
 
   connection.query(query, (error, rows) => {
     if (error) {
@@ -141,26 +150,33 @@ module.exports.movMineral = (request, response) => {
       return;
     }
 
-    var combinedRows = [];
+    connection.query(inicial, (error, rowsI) => {
+      if (error) {
+        response.send(error);
+        return;
+      }
 
-    for (let i = 0; i < rows.length; i++) {
-      var mina = rows[i].nombre;
-      var acarreoTotal = rows[i]['acarreo'];
-      var trituradasTotal = rows[i]['trituradas1'] + rows[i]['trituradas2'];
-      var existenciaPatios = acarreoTotal - trituradasTotal;
-      var existenciaInicial = existenciaPatios + acarreoTotal;
+      var combinedRows = [];
 
-      combinedRows[i] = {
-        nombre: mina,
-        acarreo: acarreoTotal,
-        trituradas: trituradasTotal,
-        existenciaPatios: existenciaPatios,
-        existenciaInicial: existenciaInicial,
-      };
-    }
+      for (let i = 0; i < rows.length; i++) {
+        var mina = rows[i].nombre;
+        var acarreo = rows[i].acarreo;
+        var trituradas = rows[i].trituradas;
+        var patios = rows[i].patios;
+        var inicial = rowsI[i].inicial;
 
-    // ENVÍO DE RESPUESTA HTTP
-    response.json(combinedRows);
+        combinedRows[i] = {
+          nombre: mina,
+          acarreo: acarreo,
+          trituradas: trituradas,
+          existenciaPatios: patios,
+          existenciaInicial: inicial,
+        };
+      }
+
+      // ENVÍO DE RESPUESTA HTTP (fuera del bucle)
+      response.json(combinedRows);
+    });
   });
 };
 
@@ -473,7 +489,9 @@ module.exports.liquidacion = (request, response) => {
   const acumuladoTMS = `SELECT
                         SUM(tms) AS 'totalTMS'
                       FROM reporte
-                      WHERE MONTH(fecha) = MONTH('${request.query.fecha}')`;
+                      WHERE 
+                        MONTH(fecha) = MONTH('${request.query.fecha}')
+                        AND YEAR(fecha) = YEAR('${request.query.fecha}')`;
         
   connection.query(cu, (error, rowsCu) => {
     if (error) {
@@ -506,16 +524,15 @@ module.exports.liquidacion = (request, response) => {
             }
 
             var combinedRows = [];
+            console.log(rowsAcumuladoTMS[0].totalTMS);
 
             for (let i = 0; i < rowsCu.length; i++) {
-              var idReporte = rowsCu[i].idReporte;
-              var fecha = rowsCu[i].fecha;
               var cu = rowsCu[i].Cu;
               var zn = rowsZn[i].Zn;
               var acumuladoCu = rowsAcumuladoCu[0].totalCu;
               var acumuladoZn = rowsAcumuladoZn[0].totalZn;
               var liquidacionAcumulada = acumuladoCu + acumuladoZn;
-              var valorAcumulado = liquidacionAcumulada / rowsAcumuladoTMS[i].totalTMS;
+              var valorAcumulado = liquidacionAcumulada / rowsAcumuladoTMS[0].totalTMS;
               var liquidacion = cu + zn;
               var valor = liquidacion / rowsZn[i].tms;
 
