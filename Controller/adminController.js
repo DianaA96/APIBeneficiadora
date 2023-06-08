@@ -324,7 +324,7 @@ module.exports.ValoresElemHist = (request,response) => {
             
             const objetoFinal = {};
             for (let j = 1; j <= ids.length; j++) {
-                var sql2 = `SELECT nombre,precio from Precio_Elemento natural Join Elemento where idElemento = ${j} and fecha fecha <= '${request.params.fecha} 23:59:59' ORDER BY fecha DESC LIMIT 1;`
+                var sql2 = `SELECT nombre,precio from Precio_Elemento natural Join Elemento where idElemento = ${j} and fecha <= '${request.params.fecha} 23:59:59' ORDER BY fecha DESC LIMIT 1;`
                 const rows = await new Promise((resolve, reject) => {
                     connection.query(sql2, (error, rows) => {
                       if (error) {
@@ -383,30 +383,29 @@ module.exports.SumaElementos = async (request, response) => {
       }
       const objetoFinal = {};
       for (let x = 0; x < idsC.length; x++) {
+        let objElementos = {};
         for (let y = 0; y < idsE.length; y++) {
-            var sql3 = `SELECT sum(gtonR) as suma from REPORTE where idConcentrado = ${idsC[x]} and idElemento = ${idsE[y]}`
+            var sql3 = `SELECT sum(gtonR) as suma, nombre from REPORTE natural join Elemento where idConcentrado = ${idsC[x]} and idElemento = ${idsE[y]} and fecha <= DATE_FORMAT('${request.params.fecha}', '%Y-%m-01')`
             const rows3 = await new Promise((resolve, reject) => {
                 connection.query(sql3, (error, rows) => {
                   if (error) {
                     reject(error);
                   } else {
-                    console.log(nombresC[x])
-                    console.log(nombresE[y])
-                    console.log(rows[0].suma)
                     resolve(rows);
                   }
                 });
             });
-
+            objElementos[`${rows3[0].nombre}`] = rows3[0].suma;
+            
         }
+        console.log(objElementos)
+        objetoFinal[`${nombresC[x]}`] = objElementos
+       
       }
 
 
-      
-      console.log(nombresC);
-      console.log(idsC);
-      console.log(nombresE);
-      console.log(idsE);
+      return response.status(200).json(objetoFinal)
+
       // Resto de tu código...
       
     } catch (error) {
