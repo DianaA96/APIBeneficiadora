@@ -3,6 +3,7 @@ var router = express.Router();
 
 var controller = require ('../Controller/gerenteController')
 
+router.get('/obtenerHumedad', controller.obtenerHumedad)
 router.get('/reporteBascula', controller.reporteBascula)
 router.get('/movMineral', controller.movMineral)
 router.get('/embarque', controller.embarque)
