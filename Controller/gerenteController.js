@@ -17,7 +17,7 @@ module.exports.reporteBascula = (req, res) => {
     SUM(trituradasP1 + trituradasP2) AS molidasAcum
     FROM movimiento_mineral mv
     JOIN mina m ON m.idMina = mv.idMina
-    WHERE DATE_SUB('${fecha}', INTERVAL 1 DAY) <= fecha
+    WHERE DATE_SUB('${fecha}', INTERVAL 1 DAY) >= fecha
     AND m.nombre = '${nombreMina}'
     AND MONTH(mv.fecha) = MONTH('${fecha}')
     AND YEAR(mv.fecha) = YEAR('${fecha}')`;
@@ -42,7 +42,7 @@ module.exports.reporteBascula = (req, res) => {
     SUM(acarreo - (trituradasP1 + trituradasP2)) AS inicial2
     FROM movimiento_mineral mv
     JOIN mina m ON m.idMina = mv.idMina
-    WHERE DATE_SUB('${fecha}', INTERVAL 1 DAY) <= fecha
+    WHERE DATE_SUB('${fecha}', INTERVAL 1 DAY) >= fecha
     AND m.nombre = '${nombreMina}'
     AND MONTH(mv.fecha) = MONTH('${fecha}')
     AND YEAR(mv.fecha) = YEAR('${fecha}')`;
@@ -53,7 +53,7 @@ module.exports.reporteBascula = (req, res) => {
     FROM movimiento_mineral mv
     JOIN mina m ON m.idMina = mv.idMina
     WHERE m.nombre = '${nombreMina}'
-    AND '${fecha}' <= mv.fecha
+    AND '${fecha}' >= mv.fecha
     AND MONTH(mv.fecha) = MONTH('${fecha}')
     AND YEAR(mv.fecha) = YEAR('${fecha}')`;
 
