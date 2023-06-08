@@ -8,6 +8,29 @@ connection.connect(error => {
     console.log('Conected gerente'); 
 });
 
+
+module.exports.obtenerHumedad = (req, res) => {
+  const idMina = req.query.idMina;
+  const fecha = req.query.fecha.replace(/'/g, '');
+
+  const consulta = `SELECT humedad FROM reporte WHERE idMina = ${idMina} AND fecha = '${fecha}' LIMIT 1`;
+
+  connection.query(consulta, (error, results) => {
+    if (error) {
+      console.error('Error en la consulta:', error);
+      res.status(500).json({ error: 'Ocurrió un error en la consulta' });
+    } else {
+      if (results.length > 0) {
+        const humedad = results[0].humedad;
+        res.json({ humedad });
+      } else {
+        res.status(404).json({ error: 'No se encontró la humedad para la fecha y mina especificadas' });
+      }
+    }
+  });
+};
+
+
 module.exports.reporteBascula = (req, res) => {
   const fecha = req.query.fecha.replace(/'/g, '');
   const nombreMina = req.query.nombreMina.replace(/'/g, '');
