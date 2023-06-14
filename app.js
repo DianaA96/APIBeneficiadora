@@ -6,7 +6,7 @@ const config = require('./helpers/config')
 //const cors = require('cors');
 require('dotenv').config();
 const app = express();
-const port = 3050; //Especifica el puerto
+const port = process.env.PORT || 3000; //Especifica el puerto
 app.use(cors());
 
 
