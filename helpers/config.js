@@ -1,11 +1,11 @@
-require('dotenv').config();
+//require('dotenv').config();
 
 var config = {
-    host: process.env.DBhost,
-    user: process.env.DBuser,
-    password: process.env.DBpassword,
-    database: process.env.Namedatabase,
-    port: process.env.DBport
+    host: process.env.CUSTOMCONSSTR_DBhost,
+    user: process.env.CUSTOMCONSSTR_DBuser,
+    password: process.env.CUSTOMCONSSTR_DBpassword,
+    database: process.env.CUSTOMCONSSTR_Namedatabase,
+    port: process.env.CUSTOMCONSSTR_DBport
 }
 
 /* 
