@@ -1,11 +1,11 @@
 //require('dotenv').config();
 
 var config = {
-    host: process.env.CUSTOMCONSSTR_DBhost,
-    user: process.env.CUSTOMCONSSTR_DBuser,
-    password: process.env.CUSTOMCONSSTR_DBpassword,
-    database: process.env.CUSTOMCONSSTR_Namedatabase,
-    port: process.env.CUSTOMCONSSTR_DBport
+    host: "purisimamysql.mysql.database.azure.com",
+    user: "equipo_tec",
+    password: "Tec*12345",
+    database: "dbpurisima",
+    port: "3306"
 }
 
 /* 
