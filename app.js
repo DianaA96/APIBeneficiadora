@@ -1,5 +1,5 @@
 const express = require('express');
-const cors = require('cors');
+//const cors = require('cors');
 require('dotenv').config()
 const mysql = require ('mysql');
 const config = require('./helpers/config')
@@ -7,7 +7,7 @@ const config = require('./helpers/config')
 require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 8080; //Especifica el puerto
-app.use(cors());
+//app.use(cors());
 
 
 var indexRouter = require('./routes/index');
