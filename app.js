@@ -4,7 +4,7 @@ require('dotenv').config()
 const mysql = require ('mysql');
 const config = require('./helpers/config')
 //const cors = require('cors');
-require('dotenv').config();
+//require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 8080; //Especifica el puerto
 //app.use(cors());
